@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dr. Houssem B | AI Vision Engineer</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .nav-link {
+            position: relative;
+        }
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: -4px;
+            left: 0;
+            background-color: #2563eb;
+            transition: width 0.3s;
+        }
+        .nav-link:hover::after {
+            width: 100%;
+        }
+        .timeline-line {
+            position: absolute;
+            left: 15px;
+            top: 24px;
+            bottom: 0;
+            width: 2px;
+            background-color: #e5e7eb;
+            z-index: 0;
+        }
+        .timeline-dot {
+            position: relative;
+            z-index: 1;
+        }
+        .section {
+            padding: 5rem 0;
+        }
+        .section-title {
+            position: relative;
+            display: inline-block;
+            margin-bottom: 2rem;
+        }
+        .section-title::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            bottom: -10px;
+            width: 50px;
+            height: 3px;
+            background-color: #2563eb;
+        }
+    </style>
+</head>
+<body class="bg-white text-gray-800">
+    <!-- Header/Navigation -->
+    <header class="fixed w-full bg-white shadow-sm z-10">
+        <div class="container mx-auto px-6 py-4">
+            <nav class="flex justify-between items-center">
+                <a href="#" class="text-2xl font-bold text-gray-900">Houssem B</a>
+                <div class="hidden md:flex space-x-8">
+                    <a href="#about" class="nav-link text-gray-700 hover:text-blue-600">About</a>
+                    <a href="#expertise" class="nav-link text-gray-700 hover:text-blue-600">Expertise</a>
+                    <a href="#experience" class="nav-link text-gray-700 hover:text-blue-600">Experience</a>
+                    <a href="#education" class="nav-link text-gray-700 hover:text-blue-600">Education</a>
+                    <a href="#contact" class="nav-link text-gray-700 hover:text-blue-600">Contact</a>
+                </div>
+                <button class="md:hidden focus:outline-none">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                    </svg>
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section id="about" class="section bg-gray-50 pt-28">
+        <div class="container mx-auto px-6">
+            <div class="flex flex-col md:flex-row items-center">
+                <div class="md:w-1/2 mb-10 md:mb-0">
+                    <h1 class="text-4xl font-bold mb-6 text-gray-900">Dr. Houssem B</h1>
+                    <h2 class="text-2xl font-medium mb-6 text-blue-600">Senior AI Engineer | 3D/2D Perception</h2>
+                    <p class="text-lg text-gray-600 mb-8">
+                        Specialized in developing production-grade perception systems for autonomous vehicles 
+                        with PhD-level expertise in 3D computer vision and sensor fusion.
+                    </p>
+                    <div class="flex space-x-4">
+                        <a href="#contact" class="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700 transition">
+                            Contact Me
+                        </a>
+                        <a href="/Houssem_B_CV.pdf" target="_blank" class="border border-blue-600 text-blue-600 px-5 py-2 rounded-lg hover:bg-blue-50 transition">
+                            Download CV
+                        </a>
+                    </div>
+                </div>
+                <div class="md:w-1/2">
+                    <img src="/api/placeholder/500/500" alt="3D Perception Visualization" class="rounded-lg shadow-lg w-full md:max-w-md mx-auto">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Expertise Section -->
+    <section id="expertise" class="section">
+        <div class="container mx-auto px-6">
+            <h2 class="section-title text-3xl font-bold text-gray-900">Core Expertise</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Expertise 1 -->
+                <div class="bg-white p-6 rounded-lg shadow-md border border-gray-100 hover:shadow-lg transition">
+                    <div class="mb-4">
+                        <i class="fas fa-cube text-blue-600 text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">3D Computer Vision</h3>
+                    <p class="text-gray-600 mb-4">
+                        Advanced systems for environment perception, object detection, and scene understanding using point cloud data.
+                    </p>
+                    <div class="text-sm text-gray-500">
+                        <span class="inline-block bg-gray-100 rounded-full px-3 py-1 mr-2 mb-2">Point Cloud Processing</span>
+                        <span class="inline-block bg-gray-100 rounded-full px-3 py-1 mr-2 mb-2">3D Detection</span>
+                        <span class="inline-block bg-gray-100 rounded-full px-3 py-1 mb-2">Scene Understanding</span>
+                    </div>
+                </div>
+                
+                <!-- Expertise 2 -->
+                <div class="bg-white p-6 rounded-lg shadow-md border border-gray-100 hover:shadow-lg transition">
+                    <div class="mb-4">
+                        <i class="fas fa-network-wired text-blue-600 text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">Sensor Fusion</h3>
+                    <p class="text-gray-600 mb-4">
+                        Multi-sensor integration strategies combining camera, LiDAR, and radar data for robust perception systems.
+                    </p>
+                    <div class="text-sm text-gray-500">
+                        <span class="inline-block bg-gray-100 rounded-full px-3 py-1 mr-2 mb-2">Camera-LiDAR Fusion</span>
+                        <span class="inline-block bg-gray-100 rounded-full px-3 py-1 mr-2 mb-2">Multi-modal Learning</span>
+                        <span class="inline-block bg-gray-100 rounded-full px-3 py-1 mb-2">Temporal Integration</span>
+                    </div>
+                </div>
+                
+                <!-- Expertise 3 -->
+                <div class="bg-white p-6 rounded-lg shadow-md border border-gray-100 hover:shadow-lg transition">
+                    <div class="mb-4">
+                        <i class="fas fa-brain text-blue-600 text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">Deep Learning</h3>
+                    <p class="text-gray-600 mb-4">
+                        State-of-the-art neural network architectures for visual perception, with research in geometric deep learning.
+                    </p>
+                    <div class="text-sm text-gray-500">
+                        <span class="inline-block bg-gray-100 rounded-full px-3 py-1 mr-2 mb-2">PyTorch</span>
+                        <span class="inline-block bg-gray-100 rounded-full px-3 py-1 mr-2 mb-2">TensorFlow</span>
+                        <span class="inline-block bg-gray-100 rounded-full px-3 py-1 mb-2">Model Optimization</span>
+                    </div>
+                </div>
+                
+                <!-- Expertise 4 -->
+                <div class="bg-white p-6 rounded-lg shadow-md border border-gray-100 hover:shadow-lg transition">
+                    <div class="mb-4">
+                        <i class="fas fa-car text-blue-600 text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">Autonomous Systems</h3>
+                    <p class="text-gray-600 mb-4">
+                        End-to-end perception solutions for autonomous vehicles, with emphasis on safety and performance.
+                    </p>
+                    <div class="text-sm text-gray-500">
+                        <span class="inline-block bg-gray-100 rounded-full px-3 py-1 mr-2 mb-2">AD/ADAS</span>
+                        <span class="inline-block bg-gray-100 rounded-full px-3 py-1 mr-2 mb-2">Robotics</span>
+                        <span class="inline-block bg-gray-100 rounded-full px-3 py-1 mb-2">Safety Systems</span>
+                    </div>
+                </div>
+                
+                <!-- Expertise 5 -->
+                <div class="bg-white p-6 rounded-lg shadow-md border border-gray-100 hover:shadow-lg transition">
+                    <div class="mb-4">
+                        <i class="fas fa-map-marked-alt text-blue-600 text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">SLAM & Localization</h3>
+                    <p class="text-gray-600 mb-4">
+                        Advanced techniques for simultaneous localization and mapping in dynamic environments.
+                    </p>
+                    <div class="text-sm text-gray-500">
+                        <span class="inline-block bg-gray-100 rounded-full px-3 py-1 mr-2 mb-2">Visual-SLAM</span>
+                        <span class="inline-block bg-gray-100 rounded-full px-3 py-1 mr-2 mb-2">Graph Optimization</span>
+                        <span class="inline-block bg-gray-100 rounded-full px-3 py-1 mb-2">3D Mapping</span>
+                    </div>
+                </div>
+                
+                <!-- Expertise 6 -->
+                <div class="bg-white p-6 rounded-lg shadow-md border border-gray-100 hover:shadow-lg transition">
+                    <div class="mb-4">
+                        <i class="fas fa-rocket text-blue-600 text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">Production Engineering</h3>
+                    <p class="text-gray-600 mb-4">
+                        Translating research into production-ready systems with efficient deployment pipelines.
+                    </p>
+                    <div class="text-sm text-gray-500">
+                        <span class="inline-block bg-gray-100 rounded-full px-3 py-1 mr-2 mb-2">TensorRT</span>
+                        <span class="inline-block bg-gray-100 rounded-full px-3 py-1 mr-2 mb-2">Docker/K8s</span>
+                        <span class="inline-block bg-gray-100 rounded-full px-3 py-1 mb-2">CI/CD Pipelines</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Experience Section -->
+    <section id="experience" class="section bg-gray-50">
+        <div class="container mx-auto px-6">
+            <h2 class="section-title text-3xl font-bold text-gray-900">Work Experience</h2>
+            
+            <div class="relative">
+                <div class="timeline-line"></div>
+                
+                <!-- Bosch -->
+                <div class="mb-12 ml-10">
+                    <div class="flex items-center mb-4">
+                        <div class="timeline-dot bg-blue-600 h-6 w-6 rounded-full flex items-center justify-center mr-4">
+                            <i class="fas fa-briefcase text-white text-xs"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-semibold">Senior 3D Vision Perception and Fusion</h3>
+                            <div class="flex items-center text-gray-600">
+                                <span>Bosch – Stuttgart, Germany</span>
+                                <span class="mx-2">•</span>
+                                <span>June 2023 – Present</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100 ml-7">
+                        <ul class="space-y-3 text-gray-700">
+                            <li class="flex">
+                                <span class="text-blue-600 mr-2">›</span>
+                                Developing advanced Deep Learning 3D/2D perception systems and sensor fusion solutions for autonomous systems (AD/ADAS)
+                            </li>
+                            <li class="flex">
+                                <span class="text-blue-600 mr-2">›</span>
+                                Architected automated deployment pipeline, reducing model integration from 1 day to 20 minutes
+                            </li>
+                            <li class="flex">
+                                <span class="text-blue-600 mr-2">›</span>
+                                Contributed to auto-labeling system and KPI evaluation framework for system optimization
+                            </li>
+                            <li class="flex">
+                                <span class="text-blue-600 mr-2">›</span>
+                                Conducting research to push boundaries of perception systems with latest advancements
+                            </li>
+                        </ul>
+                        <div class="mt-4 flex flex-wrap gap-2">
+                            <span class="text-sm bg-gray-100 px-3 py-1 rounded text-gray-600">PyTorch</span>
+                            <span class="text-sm bg-gray-100 px-3 py-1 rounded text-gray-600">C++</span>
+                            <span class="text-sm bg-gray-100 px-3 py-1 rounded text-gray-600">Docker</span>
+                            <span class="text-sm bg-gray-100 px-3 py-1 rounded text-gray-600">Kubernetes</span>
+                            <span class="text-sm bg-gray-100 px-3 py-1 rounded text-gray-600">TensorRT</span>
+                            <span class="text-sm bg-gray-100 px-3 py-1 rounded text-gray-600">ROS2</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Renault -->
+                <div class="mb-12 ml-10">
+                    <div class="flex items-center mb-4">
+                        <div class="timeline-dot bg-blue-600 h-6 w-6 rounded-full flex items-center justify-center mr-4">
+                            <i class="fas fa-graduation-cap text-white text-xs"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-semibold">Machine Learning and Computer Vision PhD Researcher</h3>
+                            <div class="flex items-center text-gray-600">
+                                <span>Renault – Nice, France</span>
+                                <span class="mx-2">•</span>
+                                <span>May 2020 – May 2023</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100 ml-7">
+                        <ul class="space-y-3 text-gray-700">
+                            <li class="flex">
+                                <span class="text-blue-600 mr-2">›</span>
+                                Designed advanced 2D/3D perception system for autonomous vehicle navigation with real-time capabilities
+                            </li>
+                            <li class="flex">
+                                <span class="text-blue-600 mr-2">›</span>
+                                Published research papers on depth estimation, generative models, domain adaptation and object detection
+                            </li>
+                            <li class="flex">
+                                <span class="text-blue-600 mr-2">›</span>
+                                Integrated SLAM algorithms for precise localization and mapping in urban environments
+                            </li>
+                        </ul>
+                        <div class="mt-4 flex flex-wrap gap-2">
+                            <span class="text-sm bg-gray-100 px-3 py-1 rounded text-gray-600">PyTorch</span>
+                            <span class="text-sm bg-gray-100 px-3 py-1 rounded text-gray-600">TensorFlow</span>
+                            <span class="text-sm bg-gray-100 px-3 py-1 rounded text-gray-600">ROS</span>
+                            <span class="text-sm bg-gray-100 px-3 py-1 rounded text-gray-600">NeRF</span>
+                            <span class="text-sm bg-gray-100 px-3 py-1 rounded text-gray-600">SLAM</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Lecturer -->
+                <div class="mb-12 ml-10">
+                    <div class="flex items-center mb-4">
+                        <div class="timeline-dot bg-blue-600 h-6 w-6 rounded-full flex items-center justify-center mr-4">
+                            <i class="fas fa-chalkboard-teacher text-white text-xs"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-semibold">Computer Vision Lecturer</h3>
+                            <div class="flex items-center text-gray-600">
+                                <span>École Polytechnique de l'Université Côte d'Azur – Nice, France</span>
+                                <span class="mx-2">•</span>
+                                <span>May 2020 – May 2023</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100 ml-7">
+                        <ul class="space-y-3 text-gray-700">
+                            <li class="flex">
+                                <span class="text-blue-600 mr-2">›</span>
+                                Delivered practical sessions on advanced computer vision topics for Master's degree students
+                            </li>
+                            <li class="flex">
+                                <span class="text-blue-600 mr-2">›</span>
+                                Covered key areas including SLAM, epipolar geometry, stereo vision, 3D reconstruction and semantic segmentation
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <!-- Airbus -->
+                <div class="mb-6 ml-10">
+                    <div class="flex items-center mb-4">
+                        <div class="timeline-dot bg-blue-600 h-6 w-6 rounded-full flex items-center justify-center mr-4">
+                            <i class="fas fa-plane text-white text-xs"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-semibold">C/C++ Software Engineer</h3>
+                            <div class="flex items-center text-gray-600">
+                                <span>Airbus – Toulouse, France</span>
+                                <span class="mx-2">•</span>
+                                <span>Oct 2019 – May 2020</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100 ml-7">
+                        <ul class="space-y-3 text-gray-700">
+                            <li class="flex">
+                                <span class="text-blue-600 mr-2">›</span>
+                                Developed a modular application framework for graphical design and automated generation of critical embedded systems
+                            </li>
+                            <li class="flex">
+                                <span class="text-blue-600 mr-2">›</span>
+                                Engineered system modeling tool in Qt for integration with Airbus's SCADE workflow
+                            </li>
+                        </ul>
+                        <div class="mt-4 flex flex-wrap gap-2">
+                            <span class="text-sm bg-gray-100 px-3 py-1 rounded text-gray-600">C++</span>
+                            <span class="text-sm bg-gray-100 px-3 py-1 rounded text-gray-600">Qt</span>
+                            <span class="text-sm bg-gray-100 px-3 py-1 rounded text-gray-600">SCADE</span>
+                            <span class="text-sm bg-gray-100 px-3 py-1 rounded text-gray-600">MVC</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Earlier Experience Toggle -->
+                <div class="ml-16 my-8">
+                    <button id="show-more" class="text-blue-600 border border-blue-600 px-4 py-2 rounded hover:bg-blue-50 transition text-sm">
+                        Show Earlier Experience
+                    </button>
+                </div>
+                
+                <!-- Hidden Earlier Experience -->
+                <div id="earlier-experience" class="hidden">
+                    <!-- GE Healthcare -->
+                    <div class="mb-12 ml-10">
+                        <div class="flex items-center mb-4">
+                            <div class="timeline-dot bg-blue-600 h-6 w-6 rounded-full flex items-center justify-center mr-4">
+                                <i class="fas fa-heartbeat text-white text-xs"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-semibold">Medical Robotics Computer Vision Intern</h3>
+                                <div class="flex items-center text-gray-600">
+                                    <span>GE Healthcare – Paris, France</span>
+                                    <span class="mx-2">•</span>
+                                    <span>April 2019 – Oct 2019</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100 ml-7">
+                            <ul class="space-y-3 text-gray-700">
+                                <li class="flex">
+                                    <span class="text-blue-600 mr-2">›</span>
+                                    Implemented real-time 3D reconstruction of human body using RGBD cameras
+                                </li>
+                                <li class="flex">
+                                    <span class="text-blue-600 mr-2">›</span>
+                                    Developed algorithms for trajectory generation, collision detection and obstacle avoidance
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <!-- CS -->
+                    <div class="mb-6 ml-10">
+                        <div class="flex items-center mb-4">
+                            <div class="timeline-dot bg-blue-600 h-6 w-6 rounded-full flex items-center justify-center mr-4">
+                                <i class="fas fa-satellite text-white text-xs"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-semibold">Aerospace Computer Vision Intern</h3>
+                                <div class="flex items-center text-gray-600">
+                                    <span>CS – Toulouse, France</span>
+                                    <span class="mx-2">•</span>
+                                    <span>Sept 2018 – March 2019</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100 ml-7">
+                            <ul class="space-y-3 text-gray-700">
+                                <li class="flex">
+                                    <span class="text-blue-600 mr-2">›</span>
+                                    Implemented 3D multiview reconstruction of satellite images
+                                </li>
+                                <li class="flex">
+                                    <span class="text-blue-600 mr-2">›</span>
+                                    Developed surface reconstruction and unsupervised classification techniques
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Skills Section -->
+    <section id="skills" class="section">
+        <div class="container mx-auto px-6">
+            <h2 class="section-title text-3xl font-bold text-gray-900">Technical Skills</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                    <h3 class="text-xl font-semibold mb-6">Programming Languages & Tools</h3>
+                    
+                    <div class="space-y-6">
+                        <div>
+                            <div class="flex justify-between mb-2">
+                                <span class="font-medium">Python</span>
+                                <span>Expert</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div class="bg-blue-600 h-2 rounded-full" style="width: 95%"></div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <div class="flex justify-between mb-2">
+                                <span class="font-medium">C/C++</span>
+                                <span>Advanced</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div class="bg-blue-600 h-2 rounded-full" style="width: 85%"></div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <div class="flex justify-between mb-2">
+                                <span class="font-medium">PyTorch</span>
+                                <span>Expert</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div class="bg-blue-600 h-2 rounded-full" style="width: 95%"></div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <div class="flex justify-between mb-2">
+                                <span class="font-medium">TensorFlow</span>
+                                <span>Advanced</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div class="bg-blue-600 h-2 rounded-full" style="width: 80%"></div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <div class="flex justify-between mb-2">
+                                <span class="font-medium">ROS/ROS2</span>
+                                <span>Advanced</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div class="bg-blue-600 h-2 rounded-full" style="width: 85%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <h3 class="text-xl font-semibold mb-6">Expertise Areas</h3>
+                    
+                    <div class="space-y-6">
+                        <div>
+                            <div class="flex justify-between mb-2">
+                                <span class="font-medium">Computer Vision</span>
+                                <span>Expert</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div class="bg-blue-600 h-2 rounded-full" style="width: 95%"></div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <div class="flex justify-between mb-2">
+                                <span class="font-medium">Deep Learning</span>
+                                <span>Expert</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div class="bg-blue-600 h-2 rounded-full" style="width: 90%"></div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <div class="flex justify-between mb-2">
+                                <span class="font-medium">Model Optimization</span>
+                                <span>Advanced</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div class="bg-blue-600 h-2 rounded-full" style="width: 85%"></div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <div class="flex justify-between mb-2">
+                                <span class="font-medium">SLAM</span>
+                                <span>Advanced</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div class="bg-blue-600 h-2 rounded-full" style="width: 80%"></div>
+                            </div>
+                        </div>
