@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dr. Houssem B | Blog</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Roboto', Arial, sans-serif;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        
+        .section-title {
+            position: relative;
+            display: inline-block;
+            margin-bottom: 30px;
+            font-weight: 600;
+        }
+        
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 0;
+            width: 40px;
+            height: 3px;
+            background-color: #2563eb;
+        }
+        
+        .nav-link {
+            position: relative;
+            padding-bottom: 3px;
+        }
+        
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background-color: #2563eb;
+            transition: width 0.3s;
+        }
+        
+        .nav-link:hover::after {
+            width: 100%;
+        }
+        
+        .blog-card {
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .blog-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        
+        .blog-content {
+            font-family: 'Georgia', serif;
+            line-height: 1.8;
+        }
+        
+        .blog-content p {
+            margin-bottom: 1.5rem;
+        }
+        
+        .blog-content h2 {
+            font-size: 1.75rem;
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+            font-weight: 700;
+        }
+        
+        .blog-content h3 {
+            font-size: 1.5rem;
+            margin-top: 1.75rem;
+            margin-bottom: 0.75rem;
+            font-weight: 600;
+        }
+        
+        .blog-content ul, .blog-content ol {
+            margin-left: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .blog-content ul li, .blog-content ol li {
+            margin-bottom: 0.5rem;
+        }
+        
+        .blog-content blockquote {
+            border-left: 4px solid #e5e7eb;
+            padding-left: 1rem;
+            margin-left: 0;
+            margin-right: 0;
+            font-style: italic;
+            color: #6b7280;
+            margin-bottom: 1.5rem;
+        }
+        
+        .blog-content pre {
+            background-color: #f3f4f6;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            overflow-x: auto;
+            margin-bottom: 1.5rem;
+        }
+        
+        .blog-content code {
+            font-family: 'Courier New', monospace;
+            background-color: #f3f4f6;
+            padding: 0.2rem 0.4rem;
+            border-radius: 0.25rem;
+            font-size: 0.875rem;
+        }
+        
+        .blog-content img {
+            max-width: 100%;
+            height: auto;
+            margin: 2rem auto;
+            display: block;
+            border-radius: 0.5rem;
+        }
+        
+        .tag {
+            display: inline-block;
+            background-color: #e5e7eb;
+            color: #4b5563;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            margin-right: 0.5rem;
+            margin-bottom: 0.5rem;
+            transition: background-color 0.3s;
+        }
+        
+        .tag:hover {
+            background-color: #d1d5db;
+        }
+    </style>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Mobile menu toggle
+            const menuButton = document.getElementById('menu-button');
+            const mobileMenu = document.getElementById('mobile-menu');
+            
+            if (menuButton && mobileMenu) {
+                menuButton.addEventListener('click', function() {
+                    mobileMenu.classList.toggle('hidden');
+                });
+            }
+        });
+    </script>
+</head>
+<body class="bg-gray-50">
+    <!-- Header/Navigation -->
+    <header class="bg-white shadow-sm sticky top-0 z-10">
+        <div class="container py-4">
+            <div class="flex justify-between items-center">
+                <a href="index.html" class="text-xl font-bold text-gray-900">Dr. Houssem B</a>
+                
+                <nav class="hidden md:block">
+                    <ul class="flex space-x-8">
+                        <li><a href="index.html#about" class="nav-link text-gray-700 hover:text-blue-600">About</a></li>
+                        <li><a href="index.html#research" class="nav-link text-gray-700 hover:text-blue-600">Research</a></li>
+                        <li><a href="index.html#publications" class="nav-link text-gray-700 hover:text-blue-600">Publications</a></li>
+                        <li><a href="index.html#experience" class="nav-link text-gray-700 hover:text-blue-600">Experience</a></li>
+                        <li><a href="index.html#education" class="nav-link text-gray-700 hover:text-blue-600">Education</a></li>
+                        <li><a href="blog.html" class="nav-link text-blue-600 border-b-2 border-blue-600">Blog</a></li>
+                        <li><a href="index.html#contact" class="nav-link text-gray-700 hover:text-blue-600">Contact</a></li>
+                    </ul>
+                </nav>
+                
+                <button id="menu-button" class="md:hidden focus:outline-none" aria-label="Toggle menu">
+                    <svg class="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <!-- Mobile menu -->
+            <div id="mobile-menu" class="md:hidden hidden mt-4 pb-2">
+                <ul class="space-y-2">
+                    <li><a href="index.html#about" class="block px-2 py-1 text-gray-700 hover:text-blue-600">About</a></li>
+                    <li><a href="index.html#research" class="block px-2 py-1 text-gray-700 hover:text-blue-600">Research</a></li>
+                    <li><a href="index.html#publications" class="block px-2 py-1 text-gray-700 hover:text-blue-600">Publications</a></li>
+                    <li><a href="index.html#experience" class="block px-2 py-1 text-gray-700 hover:text-blue-600">Experience</a></li>
+                    <li><a href="index.html#education" class="block px-2 py-1 text-gray-700 hover:text-blue-600">Education</a></li>
+                    <li><a href="blog.html" class="block px-2 py-1 text-blue-600">Blog</a></li>
+                    <li><a href="index.html#contact" class="block px-2 py-1 text-gray-700 hover:text-blue-600">Contact</a></li>
+                </ul>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <!-- Blog Header -->
+        <section class="py-16 bg-white border-b">
+            <div class="container max-w-4xl mx-auto text-center">
+                <h1 class="text-4xl md:text-5xl font-bold mb-4">AI Research & Insights</h1>
+                <p class="text-xl text-gray-600 max-w-2xl mx-auto">
+                    Thoughts, explorations, and technical deep dives on computer vision, 
+                    autonomous systems, and AI research.
+                </p>
+            </div>
+        </section>
+        
+        <!-- Featured Post -->
+        <section class="py-12">
+            <div class="container max-w-6xl mx-auto">
+                <h2 class="text-2xl font-bold mb-8">Featured Post</h2>
+                
+                <div class="bg-white rounded-lg shadow-md overflow-hidden">
+                    <div class="md:flex">
+                        <div class="md:w-1/2">
+                            <img src="/api/placeholder/600/400" alt="Depth Estimation Visualization" class="h-full w-full object-cover">
+                        </div>
+                        <div class="md:w-1/2 p-8">
+                            <div class="text-sm text-blue-600 mb-2">May 15, 2023 · 10 min read</div>
+                            <h2 class="text-2xl font-bold mb-4">
+                                <a href="blogs/imitation-learning.html" class="hover:text-blue-600 transition">
+                                    Beyond RGB: The Future of Self-Supervised Depth Estimation
+                                </a>
+                            </h2>
+                            <p class="text-gray-600 mb-6">
+                                Exploring how recent advances in self-supervised learning are revolutionizing monocular depth estimation 
+                                and what this means for the future of autonomous navigation systems.
+                            </p>
+                            <div class="mb-4">
+                                <span class="tag">Depth Estimation</span>
+                                <span class="tag">Self-Supervised Learning</span>
+                                <span class="tag">Autonomous Vehicles</span>
+                            </div>
+                            <a href="blogs/imitation-learning.html" class="text-blue-600 font-medium hover:underline">Read more →</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Recent Posts -->
+        <section class="py-12 bg-gray-50">
+            <div class="container max-w-6xl mx-auto">
+                <h2 class="text-2xl font-bold mb-8">Recent Posts</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <!-- Post 1 -->
+                    <div class="blog-card bg-white rounded-lg shadow-md overflow-hidden">
+                        <a href="blogs/imitation-learning.html">
+                            <img src="/api/placeholder/400/250" alt="Transformers in Computer Vision" class="w-full h-48 object-cover">
+                        </a>
+                        <div class="p-6">
+                            <div class="text-sm text-blue-600 mb-2">April 28, 2023 · 8 min read</div>
+                            <h3 class="text-xl font-bold mb-3">
+                                <a href="blogs/imitation-learning.html" class="hover:text-blue-600 transition">
+                                    Transformers in Computer Vision: Beyond the Hype
+                                </a>
+                            </h3>
+                            <p class="text-gray-600 mb-4">
+                                A practical analysis of transformer architectures for vision tasks and when they outperform traditional CNN approaches.
+                            </p>
+                            <div class="mb-4">
+                                <span class="tag">Transformers</span>
+                                <span class="tag">Computer Vision</span>
+                            </div>
+                            <a href="blogs/imitation-learning.html" class="text-blue-600 font-medium hover:underline">Read more →</a>
+                        </div>
+                    </div>
+                    
+                    <!-- Post 2 -->
+                    <div class="blog-card bg-white rounded-lg shadow-md overflow-hidden">
+                        <a href="blogs/imitation-learning.html">
+                            <img src="/api/placeholder/400/250" alt="Model Deployment" class="w-full h-48 object-cover">
+                        </a>
+                        <div class="p-6">
+                            <div class="text-sm text-blue-600 mb-2">March 15, 2023 · 12 min read</div>
+                            <h3 class="text-xl font-bold mb-3">
+                                <a href="blogs/imitation-learning.html" class="hover:text-blue-600 transition">
+                                    From Research to Production: Optimizing Deep Learning Models for Edge Devices
+                                </a>
+                            </h3>
+                            <p class="text-gray-600 mb-4">
+                                Techniques and best practices for deploying computationally intensive models on resource-constrained devices.
+                            </p>
+                            <div class="mb-4">
+                                <span class="tag">Model Optimization</span>
+                                <span class="tag">Edge Computing</span>
+                                <span class="tag">TensorRT</span>
+                            </div>
+                            <a href="blogs/imitation-learning.html" class="text-blue-600 font-medium hover:underline">Read more →</a>
+                        </div>
+                    </div>
+                    
+                    <!-- Post 3 -->
+                    <div class="blog-card bg-white rounded-lg shadow-md overflow-hidden">
+                        <a href="blogs/imitation-learning.html">
+                            <img src="/api/placeholder/400/250" alt="Multi-modal Learning" class="w-full h-48 object-cover">
+                        </a>
+                        <div class="p-6">
+                            <div class="text-sm text-blue-600 mb-2">February 22, 2023 · 9 min read</div>
+                            <h3 class="text-xl font-bold mb-3">
+                                <a href="blogs/imitation-learning.html" class="hover:text-blue-600 transition">
+                                    Multi-modal Learning for Robust Perception in Adverse Conditions
+                                </a>
+                            </h3>
+                            <p class="text-gray-600 mb-4">
+                                How combining data from different sensor modalities can lead to more reliable perception systems in challenging environments.
+                            </p>
+                            <div class="mb-4">
+                                <span class="tag">Sensor Fusion</span>
+                                <span class="tag">Robust Perception</span>
+                            </div>
+                            <a href="blogs/imitation-learning.html" class="text-blue-600 font-medium hover:underline">Read more →</a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
+                    <!-- Post 4 -->
+                    <div class="blog-card bg-white rounded-lg shadow-md overflow-hidden">
+                        <div class="md:flex">
+                            <div class="md:w-2/5">
+                                <a href="blogs/imitation-learning.html">
+                                    <img src="/api/placeholder/300/250" alt="GANs" class="h-full w-full object-cover">
+                                </a>
+                            </div>
+                            <div class="md:w-3/5 p-6">
+                                <div class="text-sm text-blue-600 mb-2">January 30, 2023 · 7 min read</div>
+                                <h3 class="text-lg font-bold mb-3">
+                                    <a href="blogs/imitation-learning.html" class="hover:text-blue-600 transition">
+                                        Understanding Conditional GANs: Limitations and Opportunities
+                                    </a>
+                                </h3>
+                                <p class="text-gray-600 mb-4">
+                                    A deep dive into the ways conditional GANs actually utilize conditioning information.
+                                </p>
+                                <div class="mb-4">
+                                    <span class="tag">GANs</span>
+                                    <span class="tag">Generative Models</span>
+                                </div>
+                                <a href="blogs/imitation-learning.html" class="text-blue-600 font-medium hover:underline">Read more →</a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Post 5 -->
+                    <div class="blog-card bg-white rounded-lg shadow-md overflow-hidden">
+                        <div class="md:flex">
+                            <div class="md:w-2/5">
+                                <a href="blogs/imitation-learning.html">
+                                    <img src="/api/placeholder/300/250" alt="SLAM" class="h-full w-full object-cover">
+                                </a>
+                            </div>
+                            <div class="md:w-3/5 p-6">
+                                <div class="text-sm text-blue-600 mb-2">December 12, 2022 · 11 min read</div>
+                                <h3 class="text-lg font-bold mb-3">
+                                    <a href="blogs/imitation-learning.html" class="hover:text-blue-600 transition">
+                                        Modern SLAM Techniques for Dynamic Environments
+                                    </a>
+                                </h3>
+                                <p class="text-gray-600 mb-4">
+                                    How recent advances in SLAM are addressing the challenges of mapping in environments with moving objects.
+                                </p>
+                                <div class="mb-4">
+                                    <span class="tag">SLAM</span>
+                                    <span class="tag">Mapping</span>
+                                    <span class="tag">Localization</span>
+                                </div>
+                                <a href="blogs/imitation-learning.html" class="text-blue-600 font-medium hover:underline">Read more →</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Categories Section -->
+        <section class="py-12 bg-white">
+            <div class="container max-w-6xl mx-auto">
+                <h2 class="text-2xl font-bold mb-8">Browse by Topic</h2>
+                
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <a href="#" class="bg-gray-50 p-6 rounded-lg text-center hover:bg-blue-50 transition">
+                        <div class="text-3xl mb-2">🔍</div>
+                        <h3 class="font-semibold">Depth Estimation</h3>
+                        <p class="text-sm text-gray-500">8 articles</p>
+                    </a>
+                    
+                    <a href="#" class="bg-gray-50 p-6 rounded-lg text-center hover:bg-blue-50 transition">
+                        <div class="text-3xl mb-2">🤖</div>
+                        <h3 class="font-semibold">Self-Supervised Learning</h3>
+                        <p class="text-sm text-gray-500">6 articles</p>
+                    </a>
+                    
+                    <a href="#" class="bg-gray-50 p-6 rounded-lg text-center hover:bg-blue-50 transition">
+                        <div class="text-3xl mb-2">🚗</div>
+                        <h3 class="font-semibold">Autonomous Vehicles</h3>
+                        <p class="text-sm text-gray-500">10 articles</p>
+                    </a>
+                    
+                    <a href="#" class="bg-gray-50 p-6 rounded-lg text-center hover:bg-blue-50 transition">
+                        <div class="text-3xl mb-2">📊</div>
+                        <h3 class="font-semibold">Model Optimization</h3>
+                        <p class="text-sm text-gray-500">5 articles</p>
+                    </a>
+                    
+                    <a href="#" class="bg-gray-50 p-6 rounded-lg text-center hover:bg-blue-50 transition">
+                        <div class="text-3xl mb-2">🔄</div>
+                        <h3 class="font-semibold">Sensor Fusion</h3>
+                        <p class="text-sm text-gray-500">7 articles</p>
+                    </a>
+                    
+                    <a href="#" class="bg-gray-50 p-6 rounded-lg text-center hover:bg-blue-50 transition">
+                        <div class="text-3xl mb-2">🧠</div>
+                        <h3 class="font-semibold">Neural Networks</h3>
+                        <p class="text-sm text-gray-500">12 articles</p>
+                    </a>
+                    
+                    <a href="#" class="bg-gray-50 p-6 rounded-lg text-center hover:bg-blue-50 transition">
+                        <div class="text-3xl mb-2">🗣️</div>
+                        <h3 class="font-semibold">Vision-Language Models</h3>
+                        <p class="text-sm text-gray-500">4 articles</p>
+                    </a>
+                    
+                    <a href="#" class="bg-gray-50 p-6 rounded-lg text-center hover:bg-blue-50 transition">
+                        <div class="text-3xl mb-2">🗺️</div>
+                        <h3 class="font-semibold">SLAM</h3>
+                        <p class="text-sm text-gray-500">6 articles</p>
+                    </a>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Newsletter -->
+        <section class="py-12 bg-blue-50">
+            <div class="container max-w-3xl mx-auto text-center px-4">
+                <h2 class="text-2xl font-bold mb-4">Stay Updated</h2>
+                <p class="text-gray-600 mb-6">
+                    Subscribe to get notified about new articles and research insights.
+                </p>
+                <form class="max-w-md mx-auto">
+                    <div class="flex">
+                        <input type="email" placeholder="Your email address" class="flex-1 px-4 py-3 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <button type="submit" class="bg-blue-600 text-white px-6 py-3 rounded-r-lg hover:bg-blue-700 transition">
+                            Subscribe
+                        </button>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-4">
+                        I respect your privacy. Unsubscribe at any time.
+                    </p>
+                </form>
+            </div>
+        </section>
+    </main>
+    
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-8">
+        <div class="container text-center">
+            <div class="flex justify-center space-x-8 mb-4">
+                <a href="https://github.com/Houssem-25" target="_blank" class="text-gray-300 hover:text-white">
+                    <i class="fab fa-github text-2xl"></i>
+                </a>
+                <a href="https://www.linkedin.com/in/houssemboulahbal/" target="_blank" class="text-gray-300 hover:text-white">
+                    <i class="fab fa-linkedin text-2xl"></i>
+                </a>
+                <a href="#" class="text-gray-300 hover:text-white">
+                    <i class="fas fa-graduation-cap text-2xl"></i>
+                </a>
+            </div>
+            <p>© 2025 Dr. Houssem B. All rights reserved.</p>
+        </div>
+    </footer>
+</body>
+</html>
