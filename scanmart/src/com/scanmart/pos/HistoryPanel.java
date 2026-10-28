@@ -13,7 +13,7 @@ import java.util.List;
 class HistoryPanel extends Panel {
     private final MainActivity a;
     private final LinearLayout list;
-    private final TextView today;
+    private TextView todayCount, todaySub, weekTotal, weekSub;
 
     HistoryPanel(MainActivity act) {
         super(act);
@@ -24,11 +24,14 @@ class HistoryPanel extends Panel {
         addView(root, new LayoutParams(-1, -1));
         int p = U.dp(a, 12);
 
-        LinearLayout head = U.card(a);
-        head.addView(U.text(a, "Sales today", 13, U.MUTED, false));
-        today = U.text(a, "", 28, U.PRIMARY_DARK, true);
-        head.addView(today);
-        root.addView(head, U.margins(U.lp(-1, -2, 0), a, 12, 12, 12, 0));
+        LinearLayout stats = new LinearLayout(a);
+        stats.addView(statCard("Today", todayCount = U.text(a, "", 22, U.PRIMARY_DARK, true),
+                todaySub = U.text(a, "", 12, U.MUTED, false)),
+                U.margins(U.lp(0, -2, 1), a, 0, 0, 6, 0));
+        stats.addView(statCard("Last 7 days", weekTotal = U.text(a, "", 22, U.PRIMARY_DARK, true),
+                weekSub = U.text(a, "", 12, U.MUTED, false)),
+                U.margins(U.lp(0, -2, 1), a, 6, 0, 0, 0));
+        root.addView(stats, U.margins(U.lp(-1, -2, 0), a, 12, 12, 12, 0));
 
         ScrollView sv = new ScrollView(a);
         list = new LinearLayout(a);
@@ -38,9 +41,22 @@ class HistoryPanel extends Panel {
         root.addView(sv, U.lp(-1, 0, 1));
     }
 
+    private LinearLayout statCard(String label, TextView big, TextView sub) {
+        LinearLayout c = U.card(a);
+        c.addView(U.text(a, label, 12, U.MUTED, false));
+        c.addView(big);
+        c.addView(sub);
+        return c;
+    }
+
     @Override
     void onShow() {
-        today.setText(Money.fmt(a.db.todayTotal()));
+        long[] t = a.db.salesSince(0);
+        long[] w = a.db.salesSince(6);
+        todayCount.setText(Money.fmt(t[1]));
+        todaySub.setText(t[0] + " sales");
+        weekTotal.setText(Money.fmt(w[1]));
+        weekSub.setText(w[0] + " sales");
         list.removeAllViews();
         List<Db.Sale> sales = a.db.sales(200);
         if (sales.isEmpty()) list.addView(U.centered(a, "No sales yet."));

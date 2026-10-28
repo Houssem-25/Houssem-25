@@ -17,7 +17,7 @@ class Dialogs {
 
     /** Create (existing == null) or edit a product. */
     static void editProduct(final Context c, final Db db, final Product existing,
-                            String barcodePrefill, final Saved cb, final Runnable onCancel) {
+                            String barcodePrefill, String namePrefill, final Saved cb, final Runnable onCancel) {
         LinearLayout box = new LinearLayout(c);
         box.setOrientation(LinearLayout.VERTICAL);
         int pad = U.dp(c, 20);
@@ -38,6 +38,7 @@ class Dialogs {
             stock.setText(String.valueOf(existing.stock));
         } else {
             if (barcodePrefill != null) code.setText(barcodePrefill);
+            if (namePrefill != null) name.setText(namePrefill);
             stock.setText("0");
         }
         box.addView(code);
@@ -104,6 +105,11 @@ class Dialogs {
                 }
                 Product p = new Product(bc, nm, pr, st);
                 db.save(p);
+                if (existing != null) {
+                    existing.name = nm;
+                    existing.price = pr;
+                    existing.stock = st;
+                }
                 d.dismiss();
                 if (cb != null) cb.done(p);
             }

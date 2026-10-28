@@ -108,4 +108,31 @@ class U {
         t.setPadding(dp(c, 24), dp(c, 48), dp(c, 24), dp(c, 24));
         return t;
     }
+
+    static final int[] AVATARS = {0xFF1B7F5C, 0xFF2E86AB, 0xFFB5651D, 0xFF7B5EA7, 0xFFC0392B,
+            0xFF3D7A8C, 0xFF8E6C2A, 0xFF4F6D3A};
+
+    static TextView avatar(Context c, String name) {
+        TextView t = new TextView(c);
+        String n = name == null ? "" : name.trim();
+        t.setText(n.length() == 0 ? "?" : n.substring(0, 1).toUpperCase());
+        t.setTextColor(Color.WHITE);
+        t.setTextSize(18);
+        t.setTypeface(Typeface.DEFAULT_BOLD);
+        t.setGravity(Gravity.CENTER);
+        int color = AVATARS[Math.abs(n.hashCode()) % AVATARS.length];
+        GradientDrawable d = new GradientDrawable();
+        d.setShape(GradientDrawable.OVAL);
+        d.setColor(color);
+        t.setBackground(d);
+        return t;
+    }
+
+    static TextView chip(Context c, String label, boolean selected) {
+        TextView t = text(c, label, 13, selected ? Color.WHITE : INK, true);
+        t.setBackground(rounded(selected ? PRIMARY : Color.parseColor("#E3EAE7"), 18, c));
+        t.setPadding(dp(c, 14), dp(c, 7), dp(c, 14), dp(c, 7));
+        t.setGravity(Gravity.CENTER);
+        return t;
+    }
 }

@@ -138,8 +138,12 @@ class ScanPanel extends Panel implements TextureView.SurfaceTextureListener,
             @Override
             public void onClick(View v) {
                 if (shown != null) {
-                    a.cart.add(shown);
-                    updateCard();
+                    a.addToCart(shown, new Runnable() {
+                        @Override
+                        public void run() {
+                            updateCard();
+                        }
+                    });
                 }
             }
         });
@@ -448,14 +452,44 @@ class ScanPanel extends Panel implements TextureView.SurfaceTextureListener,
     private void lookup(final String code) {
         Product p = a.db.getProduct(code);
         if (p != null) {
-            if (autoAdd) a.cart.add(p);
             showCard(p);
+            if (autoAdd) {
+                a.addToCart(p, new Runnable() {
+                    @Override
+                    public void run() {
+                        updateCard();
+                    }
+                });
+            }
             return;
         }
         paused = true;
+        hint.setVisibility(VISIBLE);
+        hint.setText("Looking up " + code + " online...");
+        final String c = code;
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                final String found = Catalog.lookupName(c);
+                post(new Runnable() {
+                    @Override
+                    public void run() {
+                        hint.setText("Point the camera at a barcode");
+                        if (card.getVisibility() == VISIBLE) hint.setVisibility(GONE);
+                        askAdd(c, found);
+                    }
+                });
+            }
+        }).start();
+    }
+
+    private void askAdd(final String code, final String foundName) {
         new AlertDialog.Builder(a)
-                .setTitle("Unknown product")
-                .setMessage("Barcode " + code + " is not in the database yet. Add it now?")
+                .setTitle("New product")
+                .setMessage((foundName != null ? foundName + "\n\n" : "")
+                        + "Barcode " + code + " is not in your database yet."
+                        + (foundName != null ? " Name found online - add it and set a price?"
+                        : " Add it now?"))
                 .setNegativeButton("Not now", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface d, int w) {
@@ -465,7 +499,7 @@ class ScanPanel extends Panel implements TextureView.SurfaceTextureListener,
                 .setPositiveButton("Add product", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface d, int w) {
-                        Dialogs.editProduct(a, a.db, null, code, new Dialogs.Saved() {
+                        Dialogs.editProduct(a, a.db, null, code, foundName, new Dialogs.Saved() {
                             @Override
                             public void done(Product np) {
                                 paused = false;
@@ -492,6 +526,9 @@ class ScanPanel extends Panel implements TextureView.SurfaceTextureListener,
         shown = p;
         card.setVisibility(VISIBLE);
         hint.setVisibility(GONE);
+        card.setAlpha(0f);
+        card.setTranslationY(U.dp(a, 36));
+        card.animate().alpha(1f).translationY(0).setDuration(200).start();
         updateCard();
     }
 
@@ -499,14 +536,15 @@ class ScanPanel extends Panel implements TextureView.SurfaceTextureListener,
         Product p = shown;
         if (p == null) return;
         cardName.setText(p.name);
-        cardPrice.setText(Money.fmt(p.price));
+        cardPrice.setText(p.price > 0 ? Money.fmt(p.price) : "Price not set");
+        cardPrice.setTextColor(p.price > 0 ? U.PRIMARY_DARK : Color.parseColor("#B5651D"));
         int inCart = 0;
         for (CartLine l : a.cart.lines()) {
             if (l.product.barcode.equals(p.barcode)) inCart = l.qty;
         }
         cardInfo.setText(p.barcode + "  •  " + (p.stock > 0 ? p.stock + " in stock" : "out of stock")
                 + (inCart > 0 ? "  •  " + inCart + " in cart" : ""));
-        addBtn.setText(inCart > 0 ? "Add another" : "Add to cart");
+        addBtn.setText(p.price <= 0 ? "Set price" : inCart > 0 ? "Add another" : "Add to cart");
     }
 
     private void hideCard() {

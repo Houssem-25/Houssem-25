@@ -7,10 +7,10 @@ import java.math.BigDecimal;
 import java.util.Locale;
 
 class Money {
-    private static String symbol = "$";
+    private static String symbol = "DA";
 
     static void load(Context c) {
-        symbol = prefs(c).getString("currency", "$");
+        symbol = prefs(c).getString("currency", "DA");
     }
 
     static SharedPreferences prefs(Context c) {
@@ -26,10 +26,17 @@ class Money {
         return symbol;
     }
 
+    /** Dinar-style ("1200 DA") for alphabetic symbols, prefix style ("$1.20") otherwise. */
     static String fmt(long cents) {
         long abs = Math.abs(cents);
-        String s = String.format(Locale.US, "%d.%02d", abs / 100, abs % 100);
-        return (cents < 0 ? "-" : "") + symbol + s;
+        boolean suffix = symbol.length() > 0 && Character.isLetter(symbol.charAt(0));
+        String sign = cents < 0 ? "-" : "";
+        if (suffix) {
+            String num = abs % 100 == 0 ? String.valueOf(abs / 100)
+                    : String.format(Locale.US, "%d.%02d", abs / 100, abs % 100);
+            return sign + num + " " + symbol;
+        }
+        return sign + symbol + String.format(Locale.US, "%d.%02d", abs / 100, abs % 100);
     }
 
     /** Parses user text such as "3", "3.5" or "3,50"; returns -1 when invalid. */

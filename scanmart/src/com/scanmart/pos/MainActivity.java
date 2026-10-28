@@ -2,6 +2,17 @@ package com.scanmart.pos;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.net.Uri;
+import android.os.Handler;
+import android.os.Looper;
+import android.widget.Toast;
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.List;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.os.Bundle;
@@ -20,7 +31,7 @@ public class MainActivity extends Activity {
 
     private Panel[] panels;
     private Button[] tabs;
-    private final String[] labels = {"Scan", "Cart", "Products", "Sales"};
+    private final String[] labels = {"\uD83D\uDCF7 Scan", "\uD83D\uDED2 Cart", "\uD83D\uDCE6 Products", "\uD83D\uDCCA Sales"};
     private int current = -1;
     private ScanPanel scan;
 
@@ -98,6 +109,160 @@ public class MainActivity extends Activity {
             }
         });
         select(0);
+        if (!Money.prefs(this).getBoolean("catalog_asked", false)) {
+            new Handler(Looper.getMainLooper()).post(new Runnable() {
+                @Override
+                public void run() {
+                    offerCatalog();
+                }
+            });
+        }
+    }
+
+    // ---- helpers shared by panels ----------------------------------------
+
+    /** Adds to the cart; products without a price are sent to the editor first. */
+    void addToCart(final Product p, final Runnable after) {
+        if (p.price <= 0) {
+            Toast.makeText(this, "Set a price first", Toast.LENGTH_SHORT).show();
+            Dialogs.editProduct(this, db, p, null, null, new Dialogs.Saved() {
+                @Override
+                public void done(Product np) {
+                    if (np.price > 0) cart.add(np);
+                    if (after != null) after.run();
+                }
+            }, null);
+            return;
+        }
+        cart.add(p);
+        if (after != null) after.run();
+    }
+
+    private void offerCatalog() {
+        Money.prefs(this).edit().putBoolean("catalog_asked", true).apply();
+        new AlertDialog.Builder(this)
+                .setTitle("Load Algerian products?")
+                .setMessage("ScanMart can download the most-scanned products sold in Algeria "
+                        + "(names and barcodes from the open Open Food Facts database) so that "
+                        + "scanning works right away. Prices are not public, so you set them "
+                        + "yourself the first time you scan each item.\n\nNeeds internet. "
+                        + "You can also do this later from Products > Tools.")
+                .setNegativeButton("Later", null)
+                .setPositiveButton("Download", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface d, int w) {
+                        importCatalog();
+                    }
+                })
+                .show();
+    }
+
+    void importCatalog() {
+        final TextView msg = U.text(this, "Connecting...", 15, U.INK, false);
+        msg.setPadding(U.dp(this, 24), U.dp(this, 20), U.dp(this, 24), U.dp(this, 8));
+        final AlertDialog dlg = new AlertDialog.Builder(this)
+                .setTitle("Downloading catalog")
+                .setView(msg)
+                .setCancelable(false)
+                .show();
+        final Handler ui = new Handler(Looper.getMainLooper());
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                String error = null;
+                int added = 0, total = 0;
+                try {
+                    List<Product> items = Catalog.fetchAlgeria(10, new Catalog.Progress() {
+                        @Override
+                        public void update(final int pages, final int found) {
+                            ui.post(new Runnable() {
+                                @Override
+                                public void run() {
+                                    msg.setText("Page " + pages + " - " + found + " products found...");
+                                }
+                            });
+                        }
+                    });
+                    total = items.size();
+                    added = db.insertMissing(items);
+                } catch (Exception e) {
+                    error = e.getMessage() == null ? e.toString() : e.getMessage();
+                }
+                final String err = error;
+                final int fAdded = added, fTotal = total;
+                ui.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        dlg.dismiss();
+                        String text;
+                        if (err != null) {
+                            text = "Could not download the catalog (" + err + "). Check your "
+                                    + "internet connection and try again from Products > Tools.";
+                        } else if (fTotal == 0) {
+                            text = "No products were returned. Try again later.";
+                        } else {
+                            text = fAdded + " new products added (" + (fTotal - fAdded)
+                                    + " were already in your database).\n\nOpen Products > "
+                                    + "\"No price\" to set prices.";
+                        }
+                        new AlertDialog.Builder(MainActivity.this).setTitle("Catalog")
+                                .setMessage(text).setPositiveButton("OK", null).show();
+                        panels[current].onShow();
+                    }
+                });
+            }
+        }).start();
+    }
+
+    private static final int REQ_EXPORT = 11, REQ_IMPORT = 12;
+
+    void exportCsv() {
+        Intent i = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+        i.addCategory(Intent.CATEGORY_OPENABLE);
+        i.setType("text/csv");
+        i.putExtra(Intent.EXTRA_TITLE, "scanmart-products.csv");
+        startActivityForResult(i, REQ_EXPORT);
+    }
+
+    void pickCsv() {
+        Intent i = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        i.addCategory(Intent.CATEGORY_OPENABLE);
+        i.setType("*/*");
+        startActivityForResult(i, REQ_IMPORT);
+    }
+
+    @Override
+    protected void onActivityResult(int req, int res, Intent data) {
+        super.onActivityResult(req, res, data);
+        if (res != RESULT_OK || data == null || data.getData() == null) return;
+        Uri uri = data.getData();
+        try {
+            if (req == REQ_EXPORT) {
+                OutputStream out = getContentResolver().openOutputStream(uri);
+                try {
+                    out.write(Csv.export(db.all()).getBytes("UTF-8"));
+                } finally {
+                    out.close();
+                }
+                Toast.makeText(this, "Products exported", Toast.LENGTH_LONG).show();
+            } else if (req == REQ_IMPORT) {
+                InputStream in = getContentResolver().openInputStream(uri);
+                ByteArrayOutputStream buf = new ByteArrayOutputStream();
+                try {
+                    byte[] b = new byte[8192];
+                    int n;
+                    while ((n = in.read(b)) > 0) buf.write(b, 0, n);
+                } finally {
+                    in.close();
+                }
+                List<Product> items = Csv.parse(buf.toString("UTF-8"));
+                db.saveAll(items);
+                Toast.makeText(this, items.size() + " products imported", Toast.LENGTH_LONG).show();
+                panels[current].onShow();
+            }
+        } catch (Exception e) {
+            Toast.makeText(this, "Failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
+        }
     }
 
     private void select(int i) {

@@ -26,7 +26,7 @@ class Db extends SQLiteOpenHelper {
     }
 
     Db(Context c) {
-        super(c, "scanmart.db", null, 1);
+        super(c, "scanmart.db", null, 2);
     }
 
     @Override
@@ -42,6 +42,7 @@ class Db extends SQLiteOpenHelper {
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldV, int newV) {
+        if (oldV < 2) db.execSQL("DELETE FROM products WHERE barcode LIKE '600100000%'");
     }
 
     // ---- barcode helpers -------------------------------------------------
@@ -71,27 +72,11 @@ class Db extends SQLiteOpenHelper {
     }
 
     private void seed(SQLiteDatabase db) {
+        // Only well-known real barcodes are bundled; the Algerian catalog is imported from
+        // Open Food Facts inside the app (Products > Tools).
         Object[][] items = {
-                {"5449000000996", "Coca-Cola Original 330ml", 99, 120},
-                {"3017620422003", "Nutella Hazelnut Spread 400g", 449, 40},
-                {ean13("600100000001"), "Whole Milk 1L", 129, 80},
-                {ean13("600100000002"), "White Bread Loaf", 189, 50},
-                {ean13("600100000003"), "Eggs (12 pack)", 349, 60},
-                {ean13("600100000004"), "Basmati Rice 1kg", 275, 70},
-                {ean13("600100000005"), "Spaghetti 500g", 119, 90},
-                {ean13("600100000006"), "Extra Virgin Olive Oil 500ml", 799, 30},
-                {ean13("600100000007"), "Red Apples 1kg", 299, 45},
-                {ean13("600100000008"), "Bananas 1kg", 189, 55},
-                {ean13("600100000009"), "Mineral Water 1.5L", 79, 200},
-                {ean13("600100000010"), "Orange Juice 1L", 249, 65},
-                {ean13("600100000011"), "Milk Chocolate Bar 100g", 159, 100},
-                {ean13("600100000012"), "Ground Coffee 250g", 599, 35},
-                {ean13("600100000013"), "White Sugar 1kg", 139, 75},
-                {ean13("600100000014"), "Table Salt 750g", 69, 85},
-                {ean13("600100000015"), "Cheddar Cheese 200g", 379, 40},
-                {ean13("600100000016"), "Chicken Breast 500g", 649, 25},
-                {ean13("600100000017"), "Tomato Sauce 400g", 129, 60},
-                {ean13("600100000018"), "Potato Chips 150g", 229, 90},
+                {"5449000000996", "Coca-Cola Original 330ml", 6000, 0},
+                {"3017620422003", "Nutella 400g", 65000, 0},
         };
         long now = System.currentTimeMillis();
         for (Object[] it : items) {
@@ -155,6 +140,55 @@ class Db extends SQLiteOpenHelper {
         v.put("updated", System.currentTimeMillis());
         getWritableDatabase().insertWithOnConflict("products", null, v,
                 SQLiteDatabase.CONFLICT_REPLACE);
+    }
+
+    /** Inserts products whose barcode is not yet known; returns how many were new. */
+    int insertMissing(List<Product> items) {
+        SQLiteDatabase db = getWritableDatabase();
+        int added = 0;
+        db.beginTransaction();
+        try {
+            long now = System.currentTimeMillis();
+            for (Product p : items) {
+                ContentValues v = new ContentValues();
+                v.put("barcode", p.barcode);
+                v.put("name", p.name);
+                v.put("price", p.price);
+                v.put("stock", p.stock);
+                v.put("updated", now);
+                if (db.insertWithOnConflict("products", null, v, SQLiteDatabase.CONFLICT_IGNORE) != -1)
+                    added++;
+            }
+            db.setTransactionSuccessful();
+        } finally {
+            db.endTransaction();
+        }
+        return added;
+    }
+
+    /** Insert or overwrite (used by CSV import). */
+    void saveAll(List<Product> items) {
+        SQLiteDatabase db = getWritableDatabase();
+        db.beginTransaction();
+        try {
+            for (Product p : items) save(p);
+            db.setTransactionSuccessful();
+        } finally {
+            db.endTransaction();
+        }
+    }
+
+    List<Product> all() {
+        return search("");
+    }
+
+    int count(String where) {
+        Cursor c = getReadableDatabase().rawQuery("SELECT COUNT(*) FROM products WHERE " + where, null);
+        try {
+            return c.moveToFirst() ? c.getInt(0) : 0;
+        } finally {
+            c.close();
+        }
     }
 
     void delete(String barcode) {
@@ -230,6 +264,24 @@ class Db extends SQLiteOpenHelper {
             c.close();
         }
         return out;
+    }
+
+    /** [count, total] of sales since the given number of days ago (0 = since midnight today). */
+    long[] salesSince(int daysAgo) {
+        Calendar cal = Calendar.getInstance();
+        cal.set(Calendar.HOUR_OF_DAY, 0);
+        cal.set(Calendar.MINUTE, 0);
+        cal.set(Calendar.SECOND, 0);
+        cal.set(Calendar.MILLISECOND, 0);
+        cal.add(Calendar.DAY_OF_YEAR, -daysAgo);
+        Cursor c = getReadableDatabase().rawQuery(
+                "SELECT COUNT(*), COALESCE(SUM(total), 0) FROM sales WHERE ts >= ?",
+                new String[]{String.valueOf(cal.getTimeInMillis())});
+        try {
+            return c.moveToFirst() ? new long[]{c.getLong(0), c.getLong(1)} : new long[]{0, 0};
+        } finally {
+            c.close();
+        }
     }
 
     long todayTotal() {
