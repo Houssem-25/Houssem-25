@@ -157,15 +157,20 @@ public class MainActivity extends Activity {
             if (db.count("1 = 1") <= 2 && !Money.prefs(this).getBoolean("pharma_hint", false)) {
                 Money.prefs(this).edit().putBoolean("pharma_hint", true).apply();
                 new AlertDialog.Builder(this)
-                        .setTitle("Load your medicine list")
-                        .setMessage("Go to Products > Tools > \"Import medicines from CSV file\" "
-                                + "and pick a spreadsheet saved as CSV. Columns are matched by "
-                                + "name (English or French): code/barcode, nom/denomination, "
-                                + "prix/ppa, stock, DCI, dosage, forme, laboratoire, "
-                                + "peremption, lot, ordonnance.\n\nFiles without barcodes "
-                                + "(like the national nomenclature) work too: the first time you "
-                                + "scan a pack, choose \"Link to medicine\".")
-                        .setPositiveButton("OK", null).show();
+                        .setTitle("Load the Algerian medicine list?")
+                        .setMessage("ScanMart includes the official national nomenclature of "
+                                + "5,381 registered medicines (names, DCI, dosage, form, "
+                                + "laboratory, prescription status) from the Ministere de "
+                                + "l'Industrie Pharmaceutique. Works offline.\n\nPrices are not "
+                                + "part of the official list: you set them yourself. You can "
+                                + "also import your own CSV from Products > Tools.")
+                        .setNegativeButton("Later", null)
+                        .setPositiveButton("Load", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface d, int w) {
+                                loadNomenclature();
+                            }
+                        }).show();
             } else {
                 expiryAlert();
             }
@@ -254,6 +259,55 @@ public class MainActivity extends Activity {
                     }
                 })
                 .show();
+    }
+
+    /** Loads the bundled national nomenclature (official MIPH list, ~5,400 medicines), offline. */
+    void loadNomenclature() {
+        final TextView msg = U.text(this, "Loading medicines...", 15, U.INK, false);
+        msg.setPadding(U.dp(this, 24), U.dp(this, 20), U.dp(this, 24), U.dp(this, 8));
+        final AlertDialog dlg = new AlertDialog.Builder(this)
+                .setTitle("National nomenclature").setView(msg).setCancelable(false).show();
+        final Handler ui = new Handler(Looper.getMainLooper());
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                String error = null;
+                int added = 0, total = 0;
+                try {
+                    InputStream in = getAssets().open("nomenclature.csv");
+                    ByteArrayOutputStream buf = new ByteArrayOutputStream();
+                    try {
+                        byte[] b = new byte[16384];
+                        int n;
+                        while ((n = in.read(b)) > 0) buf.write(b, 0, n);
+                    } finally {
+                        in.close();
+                    }
+                    Csv.Result r = Csv.parse(decode(buf.toByteArray()));
+                    total = r.items.size();
+                    added = db.insertMissing(r.items);
+                } catch (Exception e) {
+                    error = e.getMessage() == null ? e.toString() : e.getMessage();
+                }
+                final String err = error;
+                final int fAdded = added, fTotal = total;
+                ui.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        dlg.dismiss();
+                        new AlertDialog.Builder(MainActivity.this).setTitle("National nomenclature")
+                                .setMessage(err != null ? "Could not load: " + err
+                                        : fAdded + " medicines added (" + (fTotal - fAdded)
+                                        + " already present).\n\nSource: Ministere de l'Industrie "
+                                        + "Pharmaceutique, nomenclature June 2026. The list has no "
+                                        + "prices or barcodes: set prices as you go, and on the "
+                                        + "first scan of each pack choose \"Link to medicine\".")
+                                .setPositiveButton("OK", null).show();
+                        panels[current].onShow();
+                    }
+                });
+            }
+        }).start();
     }
 
     void importCatalog() {

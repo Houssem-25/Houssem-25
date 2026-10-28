@@ -8,7 +8,7 @@ ZXING=/usr/share/java/core-3.4.1.jar
 OUT=build
 rm -rf $OUT && mkdir -p $OUT/gen $OUT/classes $OUT/dex
 
-aapt package -f -m -J $OUT/gen -M AndroidManifest.xml -S res -I $FRAMEWORK_RES -F $OUT/res.apk --min-sdk-version 23 --target-sdk-version 34
+aapt package -f -m -J $OUT/gen -M AndroidManifest.xml -S res -A assets -I $FRAMEWORK_RES -F $OUT/res.apk --min-sdk-version 23 --target-sdk-version 34
 javac --release 8 -Xlint:-options -cp "$ANDROID_JAR:$ZXING" -d $OUT/classes $(find src $OUT/gen -name '*.java')
 dalvik-exchange --dex --min-sdk-version=23 --output=$OUT/dex/classes.dex $OUT/classes $ZXING
 cp $OUT/res.apk $OUT/unsigned.apk

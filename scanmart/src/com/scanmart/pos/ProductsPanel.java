@@ -216,7 +216,8 @@ class ProductsPanel extends Panel {
     private void tools() {
         final boolean ph = Money.pharmacy();
         String[] labels = ph
-                ? new String[]{"Import medicines from CSV file", "Export products to CSV file",
+                ? new String[]{"Load national nomenclature (built-in, 5,381)",
+                "Import medicines from CSV file", "Export products to CSV file",
                 "Export CNAS / CASNOS claims (CSV)"}
                 : new String[]{"Import Algerian product catalog (online)",
                 "Import products from CSV file", "Export products to CSV file"};
@@ -225,11 +226,16 @@ class ProductsPanel extends Panel {
                 .setItems(labels, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface d, int which) {
-                        if (!ph) which++;
-                        if (which == 0) a.importCatalog();
-                        else if (which == 1) a.pickCsv();
-                        else if (which == 2) a.exportCsv();
-                        else a.exportClaims();
+                        if (ph) {
+                            if (which == 0) a.loadNomenclature();
+                            else if (which == 1) a.pickCsv();
+                            else if (which == 2) a.exportCsv();
+                            else a.exportClaims();
+                        } else {
+                            if (which == 0) a.importCatalog();
+                            else if (which == 1) a.pickCsv();
+                            else a.exportCsv();
+                        }
                     }
                 })
                 .show();

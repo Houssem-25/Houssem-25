@@ -1,0 +1,2 @@
+Data: Nomenclature Nationale des Produits Pharmaceutiques, Ministere de l Industrie Pharmaceutique (MIPH), VERSION JUIN 2026.
+Converted to CSV by https://github.com/me-yasserzaouag/national-nomenclature-of-pharmaceutical-products (MIT, see NOMENCLATURE_LICENSE.txt).
