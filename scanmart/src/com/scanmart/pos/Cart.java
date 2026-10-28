@@ -45,9 +45,7 @@ class Cart {
             Product fresh = db.getProduct(l.product.barcode);
             if (fresh == null) gone.add(l.product.barcode);
             else {
-                l.product.name = fresh.name;
-                l.product.price = fresh.price;
-                l.product.stock = fresh.stock;
+                l.product.copyFrom(fresh);
             }
         }
         for (String g : gone) lines.remove(g);

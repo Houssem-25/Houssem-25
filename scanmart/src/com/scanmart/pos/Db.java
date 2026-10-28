@@ -26,13 +26,15 @@ class Db extends SQLiteOpenHelper {
     }
 
     Db(Context c) {
-        super(c, "scanmart.db", null, 2);
+        super(c, "scanmart.db", null, 3);
     }
 
     @Override
     public void onCreate(SQLiteDatabase db) {
         db.execSQL("CREATE TABLE products (barcode TEXT PRIMARY KEY, name TEXT NOT NULL, "
-                + "price INTEGER NOT NULL, stock INTEGER NOT NULL DEFAULT 0, updated INTEGER)");
+                + "price INTEGER NOT NULL, stock INTEGER NOT NULL DEFAULT 0, updated INTEGER, "
+                + "dci TEXT, dosage TEXT, form TEXT, lab TEXT, batch TEXT, "
+                + "expiry INTEGER NOT NULL DEFAULT 0, rx INTEGER NOT NULL DEFAULT 0)");
         db.execSQL("CREATE TABLE sales (id INTEGER PRIMARY KEY AUTOINCREMENT, ts INTEGER NOT NULL, "
                 + "total INTEGER NOT NULL)");
         db.execSQL("CREATE TABLE sale_items (id INTEGER PRIMARY KEY AUTOINCREMENT, "
@@ -43,6 +45,12 @@ class Db extends SQLiteOpenHelper {
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldV, int newV) {
         if (oldV < 2) db.execSQL("DELETE FROM products WHERE barcode LIKE '600100000%'");
+        if (oldV < 3) {
+            String[] text = {"dci", "dosage", "form", "lab", "batch"};
+            for (String col : text) db.execSQL("ALTER TABLE products ADD COLUMN " + col + " TEXT");
+            db.execSQL("ALTER TABLE products ADD COLUMN expiry INTEGER NOT NULL DEFAULT 0");
+            db.execSQL("ALTER TABLE products ADD COLUMN rx INTEGER NOT NULL DEFAULT 0");
+        }
     }
 
     // ---- barcode helpers -------------------------------------------------
@@ -92,13 +100,45 @@ class Db extends SQLiteOpenHelper {
 
     // ---- products --------------------------------------------------------
 
+    private static final String COLS = "barcode, name, price, stock, dci, dosage, form, lab, "
+            + "batch, expiry, rx";
+
+    private static String nz(String s) {
+        return s == null ? "" : s;
+    }
+
     private static Product read(Cursor c) {
-        return new Product(c.getString(0), c.getString(1), c.getLong(2), c.getInt(3));
+        Product p = new Product(c.getString(0), c.getString(1), c.getLong(2), c.getInt(3));
+        p.dci = nz(c.getString(4));
+        p.dosage = nz(c.getString(5));
+        p.form = nz(c.getString(6));
+        p.lab = nz(c.getString(7));
+        p.batch = nz(c.getString(8));
+        p.expiry = c.getLong(9);
+        p.rx = c.getInt(10) != 0;
+        return p;
+    }
+
+    private static ContentValues values(Product p) {
+        ContentValues v = new ContentValues();
+        v.put("barcode", p.barcode);
+        v.put("name", p.name);
+        v.put("price", p.price);
+        v.put("stock", p.stock);
+        v.put("updated", System.currentTimeMillis());
+        v.put("dci", p.dci);
+        v.put("dosage", p.dosage);
+        v.put("form", p.form);
+        v.put("lab", p.lab);
+        v.put("batch", p.batch);
+        v.put("expiry", p.expiry);
+        v.put("rx", p.rx ? 1 : 0);
+        return v;
     }
 
     Product getProduct(String barcode) {
         Cursor c = getReadableDatabase().rawQuery(
-                "SELECT barcode, name, price, stock FROM products WHERE barcode = ?",
+                "SELECT " + COLS + " FROM products WHERE barcode = ?",
                 new String[]{normalize(barcode)});
         try {
             return c.moveToFirst() ? read(c) : null;
@@ -110,9 +150,9 @@ class Db extends SQLiteOpenHelper {
     List<Product> search(String q) {
         String like = "%" + (q == null ? "" : q.trim()) + "%";
         Cursor c = getReadableDatabase().rawQuery(
-                "SELECT barcode, name, price, stock FROM products "
-                        + "WHERE name LIKE ? OR barcode LIKE ? ORDER BY name COLLATE NOCASE",
-                new String[]{like, like});
+                "SELECT " + COLS + " FROM products WHERE name LIKE ? OR barcode LIKE ? "
+                        + "OR dci LIKE ? ORDER BY name COLLATE NOCASE",
+                new String[]{like, like, like});
         List<Product> out = new ArrayList<Product>();
         try {
             while (c.moveToNext()) out.add(read(c));
@@ -132,14 +172,30 @@ class Db extends SQLiteOpenHelper {
     }
 
     void save(Product p) {
-        ContentValues v = new ContentValues();
-        v.put("barcode", p.barcode);
-        v.put("name", p.name);
-        v.put("price", p.price);
-        v.put("stock", p.stock);
-        v.put("updated", System.currentTimeMillis());
-        getWritableDatabase().insertWithOnConflict("products", null, v,
+        getWritableDatabase().insertWithOnConflict("products", null, values(p),
                 SQLiteDatabase.CONFLICT_REPLACE);
+    }
+
+    /** Products with the same active substance, for substitution suggestions. */
+    List<Product> sameDci(String dci, String exceptBarcode) {
+        Cursor c = getReadableDatabase().rawQuery(
+                "SELECT " + COLS + " FROM products WHERE dci = ? COLLATE NOCASE AND barcode != ? "
+                        + "ORDER BY price", new String[]{dci, exceptBarcode});
+        List<Product> out = new ArrayList<Product>();
+        try {
+            while (c.moveToNext()) out.add(read(c));
+        } finally {
+            c.close();
+        }
+        return out;
+    }
+
+    /** Re-keys a product (links a scanned pack barcode to a listed medicine). */
+    boolean rename(String oldCode, String newCode) {
+        if (getProduct(newCode) != null) return false;
+        ContentValues v = new ContentValues();
+        v.put("barcode", newCode);
+        return getWritableDatabase().update("products", v, "barcode = ?", new String[]{oldCode}) == 1;
     }
 
     /** Inserts products whose barcode is not yet known; returns how many were new. */
@@ -148,15 +204,9 @@ class Db extends SQLiteOpenHelper {
         int added = 0;
         db.beginTransaction();
         try {
-            long now = System.currentTimeMillis();
             for (Product p : items) {
-                ContentValues v = new ContentValues();
-                v.put("barcode", p.barcode);
-                v.put("name", p.name);
-                v.put("price", p.price);
-                v.put("stock", p.stock);
-                v.put("updated", now);
-                if (db.insertWithOnConflict("products", null, v, SQLiteDatabase.CONFLICT_IGNORE) != -1)
+                if (db.insertWithOnConflict("products", null, values(p),
+                        SQLiteDatabase.CONFLICT_IGNORE) != -1)
                     added++;
             }
             db.setTransactionSuccessful();

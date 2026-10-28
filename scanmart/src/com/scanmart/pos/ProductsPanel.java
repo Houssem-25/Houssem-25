@@ -23,8 +23,8 @@ class ProductsPanel extends Panel {
     private final ListView lv;
     private final EditText search;
     private final TextView empty;
-    private final TextView[] chips = new TextView[3];
-    private final String[] chipNames = {"All", "No price", "Low stock"};
+    private final TextView[] chips = new TextView[4];
+    private final String[] chipNames = {"All", "No price", "Low stock", "Expiring"};
     private final List<Product> items = new ArrayList<Product>();
     private int filter = 0;
 
@@ -68,7 +68,7 @@ class ProductsPanel extends Panel {
 
         LinearLayout chipRow = new LinearLayout(a);
         chipRow.setPadding(p, U.dp(a, 8), p, U.dp(a, 4));
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < 4; i++) {
             final int idx = i;
             chips[i] = U.chip(a, chipNames[i], i == 0);
             chips[i].setOnClickListener(new OnClickListener() {
@@ -80,7 +80,10 @@ class ProductsPanel extends Panel {
             });
             chipRow.addView(chips[i], U.margins(U.lp(-2, -2, 0), a, 0, 0, 8, 0));
         }
-        root.addView(chipRow);
+        android.widget.HorizontalScrollView hs = new android.widget.HorizontalScrollView(a);
+        hs.setHorizontalScrollBarEnabled(false);
+        hs.addView(chipRow);
+        root.addView(hs);
 
         FrameLayoutHolder holder = new FrameLayoutHolder(a);
         lv = new ListView(a);
@@ -137,12 +140,18 @@ class ProductsPanel extends Panel {
         render();
     }
 
+    void setFilter(int f) {
+        filter = f;
+        render();
+    }
+
     void render() {
         List<Product> found = a.db.search(search.getText().toString());
         items.clear();
         for (Product p : found) {
             if (filter == 1 && p.price > 0) continue;
             if (filter == 2 && !(p.stock >= 1 && p.stock <= 5)) continue;
+            if (filter == 3 && p.expiryState() == 0) continue;
             items.add(p);
         }
         adapter.notifyDataSetChanged();
@@ -150,8 +159,11 @@ class ProductsPanel extends Panel {
         int noPrice = a.db.count("price = 0");
         int low = a.db.count("stock BETWEEN 1 AND 5");
         int all = a.db.count("1 = 1");
-        String[] labels = {"All " + all, "No price " + noPrice, "Low stock " + low};
-        for (int i = 0; i < 3; i++) {
+        int exp = a.db.count("expiry > 0 AND expiry < " + (System.currentTimeMillis() + Product.SOON_MS));
+        String[] labels = {"All " + all, "No price " + noPrice, "Low stock " + low, "Expiring " + exp};
+        chips[3].setVisibility(Money.pharmacy() ? VISIBLE : GONE);
+        if (!Money.pharmacy() && filter == 3) filter = 0;
+        for (int i = 0; i < 4; i++) {
             boolean sel = i == filter;
             chips[i].setText(labels[i]);
             chips[i].setTextColor(sel ? Color.WHITE : U.INK);
@@ -177,8 +189,17 @@ class ProductsPanel extends Panel {
         name.setEllipsize(android.text.TextUtils.TruncateAt.END);
         mid.addView(name);
         boolean low = p.stock >= 1 && p.stock <= 5;
+        String detail = p.detail();
+        if (detail.length() > 0) mid.addView(U.text(a, detail, 12, U.PRIMARY_DARK, false));
         mid.addView(U.text(a, p.barcode + "  •  stock " + p.stock, 12,
                 low ? U.DANGER : U.MUTED, false));
+        if (p.expiry > 0 || p.rx) {
+            int st = p.expiryState();
+            String tag = (p.rx ? "Rx  " : "") + (p.expiry > 0 ? "exp " + Product.fmtExpiry(p.expiry)
+                    + (st == 2 ? " EXPIRED" : st == 1 ? " (soon)" : "") : "");
+            mid.addView(U.text(a, tag, 12, st == 2 ? U.DANGER : st == 1
+                    ? Color.parseColor("#B5651D") : U.MUTED, st > 0));
+        }
         card.addView(mid, U.lp(0, -2, 1));
         if (p.price > 0) card.addView(U.text(a, Money.fmt(p.price), 16, U.PRIMARY_DARK, true));
         else card.addView(U.text(a, "Set price", 13, Color.parseColor("#B5651D"), true));
@@ -193,20 +214,22 @@ class ProductsPanel extends Panel {
     }
 
     private void tools() {
+        final boolean ph = Money.pharmacy();
+        String[] labels = ph
+                ? new String[]{"Import medicines from CSV file", "Export products to CSV file"}
+                : new String[]{"Import Algerian product catalog (online)",
+                "Import products from CSV file", "Export products to CSV file"};
         new AlertDialog.Builder(a)
                 .setTitle("Tools")
-                .setItems(new String[]{
-                        "Import Algerian product catalog (online)",
-                        "Import products from CSV file",
-                        "Export products to CSV file"},
-                        new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface d, int which) {
-                                if (which == 0) a.importCatalog();
-                                else if (which == 1) a.pickCsv();
-                                else a.exportCsv();
-                            }
-                        })
+                .setItems(labels, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface d, int which) {
+                        if (!ph) which++;
+                        if (which == 0) a.importCatalog();
+                        else if (which == 1) a.pickCsv();
+                        else a.exportCsv();
+                    }
+                })
                 .show();
     }
 

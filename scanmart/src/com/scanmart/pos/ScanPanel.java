@@ -42,6 +42,8 @@ class ScanPanel extends Panel implements TextureView.SurfaceTextureListener,
     private final TextView cardName;
     private final TextView cardPrice;
     private final TextView cardInfo;
+    private final TextView cardPharma;
+    private final android.widget.Button altBtn;
     private final android.widget.Button addBtn;
     private final android.widget.Button torchBtn;
 
@@ -120,6 +122,16 @@ class ScanPanel extends Panel implements TextureView.SurfaceTextureListener,
         card.addView(cardName);
         card.addView(cardPrice);
         card.addView(cardInfo);
+        cardPharma = U.text(a, "", 13, U.PRIMARY_DARK, true);
+        card.addView(cardPharma);
+        altBtn = U.secondary(a, "Same active substance (alternatives)");
+        card.addView(altBtn, U.margins(U.lp(-1, -2, 0), a, 0, 8, 0, 0));
+        altBtn.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                showAlternatives();
+            }
+        });
         LinearLayout row = new LinearLayout(a);
         addBtn = U.primary(a, "Add to cart");
         android.widget.Button close = U.secondary(a, "Dismiss");
@@ -464,6 +476,10 @@ class ScanPanel extends Panel implements TextureView.SurfaceTextureListener,
             return;
         }
         paused = true;
+        if (Money.pharmacy()) {
+            askAdd(code, null);
+            return;
+        }
         hint.setVisibility(VISIBLE);
         hint.setText("Looking up " + code + " online...");
         final String c = code;
@@ -484,9 +500,13 @@ class ScanPanel extends Panel implements TextureView.SurfaceTextureListener,
     }
 
     private void askAdd(final String code, final String foundName) {
-        new AlertDialog.Builder(a)
-                .setTitle("New product")
-                .setMessage((foundName != null ? foundName + "\n\n" : "")
+        final boolean ph = Money.pharmacy();
+        AlertDialog.Builder b = new AlertDialog.Builder(a)
+                .setTitle(ph ? "Unknown pack" : "New product")
+                .setMessage(ph
+                        ? "Barcode " + code + " is not linked to a medicine yet.\n\nLink it to a "
+                        + "medicine from your list (nomenclature), or add a new one."
+                        : (foundName != null ? foundName + "\n\n" : "")
                         + "Barcode " + code + " is not in your database yet."
                         + (foundName != null ? " Name found online - add it and set a price?"
                         : " Add it now?"))
@@ -496,30 +516,79 @@ class ScanPanel extends Panel implements TextureView.SurfaceTextureListener,
                         paused = false;
                     }
                 })
-                .setPositiveButton("Add product", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface d, int w) {
-                        Dialogs.editProduct(a, a.db, null, code, foundName, new Dialogs.Saved() {
-                            @Override
-                            public void done(Product np) {
-                                paused = false;
-                                showCard(np);
-                            }
-                        }, new Runnable() {
-                            @Override
-                            public void run() {
-                                paused = false;
-                            }
-                        });
-                    }
-                })
                 .setOnCancelListener(new DialogInterface.OnCancelListener() {
                     @Override
                     public void onCancel(DialogInterface d) {
                         paused = false;
                     }
-                })
-                .show();
+                });
+        DialogInterface.OnClickListener addNew = new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface d, int w) {
+                Dialogs.editProduct(a, a.db, null, code, foundName, new Dialogs.Saved() {
+                    @Override
+                    public void done(Product np) {
+                        paused = false;
+                        showCard(np);
+                    }
+                }, new Runnable() {
+                    @Override
+                    public void run() {
+                        paused = false;
+                    }
+                });
+            }
+        };
+        if (ph) {
+            b.setPositiveButton("Link to medicine", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface d, int w) {
+                    Dialogs.pickProduct(a, a.db, "Which medicine is this?", new Dialogs.Picked() {
+                        @Override
+                        public void pick(Product p) {
+                            if (a.db.rename(p.barcode, code)) {
+                                paused = false;
+                                Product linked = a.db.getProduct(code);
+                                if (linked != null) showCard(linked);
+                            } else {
+                                paused = false;
+                                android.widget.Toast.makeText(a, "Could not link this barcode",
+                                        android.widget.Toast.LENGTH_LONG).show();
+                            }
+                        }
+                    });
+                }
+            });
+            b.setNeutralButton("New medicine", addNew);
+        } else {
+            b.setPositiveButton("Add product", addNew);
+        }
+        AlertDialog dlg = b.create();
+        dlg.show();
+    }
+
+    private void showAlternatives() {
+        final Product p = shown;
+        if (p == null || p.dci.length() == 0) return;
+        final java.util.List<Product> alts = a.db.sameDci(p.dci, p.barcode);
+        if (alts.isEmpty()) {
+            android.widget.Toast.makeText(a, "No other product with " + p.dci,
+                    android.widget.Toast.LENGTH_SHORT).show();
+            return;
+        }
+        String[] labels = new String[alts.size()];
+        for (int i = 0; i < labels.length; i++) {
+            Product x = alts.get(i);
+            labels[i] = x.name + (x.dosage.length() > 0 ? " " + x.dosage : "") + "  -  "
+                    + (x.price > 0 ? Money.fmt(x.price) : "no price") + "  (stock " + x.stock + ")";
+        }
+        new AlertDialog.Builder(a).setTitle("Alternatives: " + p.dci)
+                .setItems(labels, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface d, int which) {
+                        showCard(alts.get(which));
+                    }
+                }).show();
     }
 
     private void showCard(Product p) {
@@ -544,6 +613,18 @@ class ScanPanel extends Panel implements TextureView.SurfaceTextureListener,
         }
         cardInfo.setText(p.barcode + "  •  " + (p.stock > 0 ? p.stock + " in stock" : "out of stock")
                 + (inCart > 0 ? "  •  " + inCart + " in cart" : ""));
+        String d = p.detail();
+        String ex = p.expiry > 0 ? "Exp " + Product.fmtExpiry(p.expiry)
+                + (p.expiryState() == 2 ? " - EXPIRED" : p.expiryState() == 1 ? " - expires soon" : "")
+                : "";
+        String extra = (d.length() > 0 ? d : "") + (p.rx ? (d.length() > 0 ? "\n" : "")
+                + "Prescription required" : "")
+                + (ex.length() > 0 ? "\n" + ex : "")
+                + (p.lab.length() > 0 ? "\n" + p.lab : "");
+        cardPharma.setText(extra);
+        cardPharma.setVisibility(extra.length() > 0 ? VISIBLE : GONE);
+        cardPharma.setTextColor(p.expiryState() == 2 ? U.DANGER : U.PRIMARY_DARK);
+        altBtn.setVisibility(p.dci.length() > 0 ? VISIBLE : GONE);
         addBtn.setText(p.price <= 0 ? "Set price" : inCart > 0 ? "Add another" : "Add to cart");
     }
 

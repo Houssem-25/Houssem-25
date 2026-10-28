@@ -111,7 +111,10 @@ class CartPanel extends Panel {
         for (final CartLine l : lines) {
             LinearLayout card = U.card(a);
             card.addView(U.text(a, l.product.name, 16, U.INK, true));
-            card.addView(U.text(a, Money.fmt(l.product.price) + " each", 13, U.MUTED, false));
+            String detail = l.product.detail();
+            card.addView(U.text(a, Money.fmt(l.product.price) + " each"
+                    + (detail.length() > 0 ? "  \u2022  " + detail : "")
+                    + (l.product.rx ? "  \u2022  Rx" : ""), 13, U.MUTED, false));
             LinearLayout row = new LinearLayout(a);
             row.setGravity(Gravity.CENTER_VERTICAL);
             android.widget.Button minus = U.secondary(a, "-");

@@ -11,6 +11,7 @@ class Money {
 
     static void load(Context c) {
         symbol = prefs(c).getString("currency", "DA");
+        pharmacy = "pharmacy".equals(prefs(c).getString("mode", "store"));
     }
 
     static SharedPreferences prefs(Context c) {
@@ -20,6 +21,21 @@ class Money {
     static void setSymbol(Context c, String s) {
         symbol = s;
         prefs(c).edit().putString("currency", s).apply();
+    }
+
+    private static boolean pharmacy;
+
+    static boolean pharmacy() {
+        return pharmacy;
+    }
+
+    static void setPharmacy(Context c, boolean on) {
+        pharmacy = on;
+        prefs(c).edit().putString("mode", on ? "pharmacy" : "store").apply();
+    }
+
+    static boolean modeChosen(Context c) {
+        return prefs(c).contains("mode");
     }
 
     static String symbol() {

@@ -27,6 +27,7 @@ import android.widget.TextView;
 
 public class MainActivity extends Activity {
     Db db;
+    private final java.util.Set<String> confirmedRx = new java.util.HashSet<String>();
     final Cart cart = new Cart();
 
     private Panel[] panels;
@@ -34,6 +35,7 @@ public class MainActivity extends Activity {
     private final String[] labels = {"\uD83D\uDCF7 Scan", "\uD83D\uDED2 Cart", "\uD83D\uDCE6 Products", "\uD83D\uDCCA Sales"};
     private int current = -1;
     private ScanPanel scan;
+    private TextView title;
 
     @Override
     protected void onCreate(Bundle b) {
@@ -54,7 +56,7 @@ public class MainActivity extends Activity {
         header.setBackgroundColor(U.PRIMARY);
         header.setGravity(Gravity.CENTER_VERTICAL);
         header.setPadding(U.dp(this, 16), U.dp(this, 8), U.dp(this, 8), U.dp(this, 8));
-        TextView title = U.text(this, "ScanMart", 20, Color.WHITE, true);
+        title = U.text(this, "ScanMart", 20, Color.WHITE, true);
         Button gear = U.button(this, "Settings", Color.TRANSPARENT, Color.WHITE);
         header.addView(title, U.lp(0, -2, 1));
         header.addView(gear);
@@ -65,6 +67,7 @@ public class MainActivity extends Activity {
                 Dialogs.settings(MainActivity.this, new Runnable() {
                     @Override
                     public void run() {
+                        applyMode();
                         panels[current].onShow();
                     }
                 });
@@ -105,24 +108,120 @@ public class MainActivity extends Activity {
         cart.listen(new Runnable() {
             @Override
             public void run() {
+                if (cart.isEmpty()) confirmedRx.clear();
                 updateTabs();
             }
         });
         select(0);
-        if (!Money.prefs(this).getBoolean("catalog_asked", false)) {
-            new Handler(Looper.getMainLooper()).post(new Runnable() {
-                @Override
-                public void run() {
-                    offerCatalog();
-                }
-            });
+        applyMode();
+        new Handler(Looper.getMainLooper()).post(new Runnable() {
+            @Override
+            public void run() {
+                if (!Money.modeChosen(MainActivity.this)) chooseMode();
+                else afterMode();
+            }
+        });
+    }
+
+    private void applyMode() {
+        title.setText(Money.pharmacy() ? "ScanMart Pharmacy" : "ScanMart");
+    }
+
+    private void chooseMode() {
+        new AlertDialog.Builder(this)
+                .setTitle("What kind of shop is this?")
+                .setMessage("You can change this later in Settings.")
+                .setCancelable(false)
+                .setPositiveButton("Supermarket", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface d, int w) {
+                        Money.setPharmacy(MainActivity.this, false);
+                        applyMode();
+                        afterMode();
+                    }
+                })
+                .setNegativeButton("Pharmacy", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface d, int w) {
+                        Money.setPharmacy(MainActivity.this, true);
+                        applyMode();
+                        panels[current].onShow();
+                        afterMode();
+                    }
+                })
+                .show();
+    }
+
+    private void afterMode() {
+        if (Money.pharmacy()) {
+            if (db.count("1 = 1") <= 2 && !Money.prefs(this).getBoolean("pharma_hint", false)) {
+                Money.prefs(this).edit().putBoolean("pharma_hint", true).apply();
+                new AlertDialog.Builder(this)
+                        .setTitle("Load your medicine list")
+                        .setMessage("Go to Products > Tools > \"Import medicines from CSV file\" "
+                                + "and pick a spreadsheet saved as CSV. Columns are matched by "
+                                + "name (English or French): code/barcode, nom/denomination, "
+                                + "prix/ppa, stock, DCI, dosage, forme, laboratoire, "
+                                + "peremption, lot, ordonnance.\n\nFiles without barcodes "
+                                + "(like the national nomenclature) work too: the first time you "
+                                + "scan a pack, choose \"Link to medicine\".")
+                        .setPositiveButton("OK", null).show();
+            } else {
+                expiryAlert();
+            }
+        } else if (!Money.prefs(this).getBoolean("catalog_asked", false)) {
+            offerCatalog();
         }
+    }
+
+    private void expiryAlert() {
+        long limit = System.currentTimeMillis() + Product.SOON_MS;
+        final int expired = db.count("expiry > 0 AND expiry < " + System.currentTimeMillis()
+                + " AND stock > 0");
+        int soon = db.count("expiry > 0 AND expiry < " + limit + " AND stock > 0") - expired;
+        if (expired + soon == 0) return;
+        new AlertDialog.Builder(this)
+                .setTitle("Expiry check")
+                .setMessage(expired + " expired and " + soon + " expiring within 90 days (in stock).")
+                .setNegativeButton("Later", null)
+                .setPositiveButton("View", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface d, int w) {
+                        select(2);
+                        ((ProductsPanel) panels[2]).setFilter(3);
+                    }
+                }).show();
     }
 
     // ---- helpers shared by panels ----------------------------------------
 
     /** Adds to the cart; products without a price are sent to the editor first. */
     void addToCart(final Product p, final Runnable after) {
+        if (p.expiryState() == 2) {
+            new AlertDialog.Builder(this).setTitle("Expired medicine")
+                    .setMessage(p.name + " expired on " + Product.fmtExpiry(p.expiry)
+                            + ". It cannot be sold.")
+                    .setPositiveButton("OK", null).show();
+            return;
+        }
+        if (p.rx && !confirmedRx.contains(p.barcode)) {
+            new AlertDialog.Builder(this).setTitle("Prescription required")
+                    .setMessage(p.name + " is sold on prescription only. Have you checked the "
+                            + "prescription?")
+                    .setNegativeButton("Cancel", null)
+                    .setPositiveButton("Prescription checked", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface d, int w) {
+                            confirmedRx.add(p.barcode);
+                            addToCart(p, after);
+                        }
+                    }).show();
+            return;
+        }
+        if (p.expiryState() == 1) {
+            Toast.makeText(this, "Warning: expires " + Product.fmtExpiry(p.expiry),
+                    Toast.LENGTH_LONG).show();
+        }
         if (p.price <= 0) {
             Toast.makeText(this, "Set a price first", Toast.LENGTH_SHORT).show();
             Dialogs.editProduct(this, db, p, null, null, new Dialogs.Saved() {
@@ -231,6 +330,18 @@ public class MainActivity extends Activity {
         startActivityForResult(i, REQ_IMPORT);
     }
 
+    /** UTF-8 when valid, otherwise Windows-1252 (common for spreadsheets saved as CSV). */
+    private static String decode(byte[] data) throws Exception {
+        try {
+            return java.nio.charset.Charset.forName("UTF-8").newDecoder()
+                    .onMalformedInput(java.nio.charset.CodingErrorAction.REPORT)
+                    .onUnmappableCharacter(java.nio.charset.CodingErrorAction.REPORT)
+                    .decode(java.nio.ByteBuffer.wrap(data)).toString();
+        } catch (java.nio.charset.CharacterCodingException e) {
+            return new String(data, "windows-1252");
+        }
+    }
+
     @Override
     protected void onActivityResult(int req, int res, Intent data) {
         super.onActivityResult(req, res, data);
@@ -255,9 +366,11 @@ public class MainActivity extends Activity {
                 } finally {
                     in.close();
                 }
-                List<Product> items = Csv.parse(buf.toString("UTF-8"));
-                db.saveAll(items);
-                Toast.makeText(this, items.size() + " products imported", Toast.LENGTH_LONG).show();
+                Csv.Result r = Csv.parse(decode(buf.toByteArray()));
+                db.saveAll(r.items);
+                Toast.makeText(this, r.items.size() + " products imported"
+                        + (r.skipped > 0 ? " (" + r.skipped + " rows skipped: no name)" : ""),
+                        Toast.LENGTH_LONG).show();
                 panels[current].onShow();
             }
         } catch (Exception e) {
