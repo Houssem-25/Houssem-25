@@ -18,6 +18,8 @@ class Product {
     String batch = "";
     long expiry;          // end of the expiry month/day, millis; 0 = none
     boolean rx;           // prescription required
+    long tr;              // reference tariff (tarif de reference), minor units; 0 = none
+    int reimb;            // reimbursement rate in percent (0 = not reimbursable)
 
     Product(String barcode, String name, long price, int stock) {
         this.barcode = barcode;
@@ -37,11 +39,13 @@ class Product {
         batch = o.batch;
         expiry = o.expiry;
         rx = o.rx;
+        tr = o.tr;
+        reimb = o.reimb;
     }
 
     boolean isPharma() {
         return dci.length() > 0 || dosage.length() > 0 || form.length() > 0 || lab.length() > 0
-                || expiry > 0 || rx;
+                || expiry > 0 || rx || tr > 0 || reimb > 0;
     }
 
     /** "DCI • dosage • form" for the parts that are filled in. */

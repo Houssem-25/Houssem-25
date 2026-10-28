@@ -7,6 +7,12 @@ import java.util.Map;
 
 class Cart {
     private final Map<String, CartLine> lines = new LinkedHashMap<String, CartLine>();
+    // insurance (tiers payant) for the current sale; fund "" = cash patient
+    String fund = "";
+    String insured = "";
+    String patient = "";
+    boolean exempt;
+
     private final List<Runnable> listeners = new ArrayList<Runnable>();
 
     void listen(Runnable r) {
@@ -33,7 +39,30 @@ class Cart {
         changed();
     }
 
+    void setInsurance(String fund, String insured, String patient, boolean exempt) {
+        this.fund = fund;
+        this.insured = insured;
+        this.patient = patient;
+        this.exempt = exempt;
+        changed();
+    }
+
+    long reimbursed() {
+        if (fund.length() == 0) return 0;
+        long t = 0;
+        for (CartLine l : lines.values()) t += Reimb.perUnit(l.product, exempt) * l.qty;
+        return t;
+    }
+
+    long patientShare() {
+        return total() - reimbursed();
+    }
+
     void clear() {
+        fund = "";
+        insured = "";
+        patient = "";
+        exempt = false;
         lines.clear();
         changed();
     }

@@ -17,6 +17,8 @@ class CartPanel extends Panel {
     private final LinearLayout list;
     private final TextView totalView;
     private final TextView countView;
+    private final TextView splitView;
+    private final android.widget.Button insBtn;
     private final android.widget.Button checkoutBtn;
     private final android.widget.Button clearBtn;
 
@@ -48,6 +50,16 @@ class CartPanel extends Panel {
         row.addView(countView, U.lp(0, -2, 1));
         row.addView(totalView);
         foot.addView(row);
+        splitView = U.text(a, "", 14, U.INK, true);
+        foot.addView(splitView);
+        insBtn = U.secondary(a, "Payment: cash  (tap for CNAS / CASNOS)");
+        foot.addView(insBtn, U.margins(U.lp(-1, -2, 0), a, 0, 8, 0, 0));
+        insBtn.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Dialogs.insurance(a, a.cart, null);
+            }
+        });
         LinearLayout btns = new LinearLayout(a);
         clearBtn = U.secondary(a, "Clear");
         checkoutBtn = U.primary(a, "Checkout");
@@ -87,16 +99,20 @@ class CartPanel extends Panel {
         if (a.cart.isEmpty()) return;
         new AlertDialog.Builder(a)
                 .setTitle("Complete sale?")
-                .setMessage(a.cart.itemCount() + " items, total " + Money.fmt(a.cart.total()))
+                .setMessage(a.cart.itemCount() + " items, total " + Money.fmt(a.cart.total())
+                        + (a.cart.fund.length() > 0 ? "\n" + a.cart.fund + " pays "
+                        + Money.fmt(a.cart.reimbursed()) + "\nPatient pays "
+                        + Money.fmt(a.cart.patientShare()) : ""))
                 .setNegativeButton("Cancel", null)
                 .setPositiveButton("Charge", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface d, int w) {
                         List<CartLine> lines = a.cart.lines();
-                        long id = a.db.checkout(lines);
+                        long id = a.db.checkout(lines, a.cart.fund, a.cart.insured,
+                                a.cart.patient, a.cart.exempt);
                         a.cart.clear();
                         Toast.makeText(a, "Sale saved", Toast.LENGTH_SHORT).show();
-                        Receipt.show(a, id, System.currentTimeMillis(), a.db.saleItems(id));
+                        Receipt.show(a, a.db.getSale(id), a.db.saleItems(id));
                     }
                 })
                 .show();
@@ -143,6 +159,17 @@ class CartPanel extends Panel {
             });
             list.addView(card, U.margins(U.lp(-1, -2, 0), a, 0, 0, 0, 10));
         }
+        boolean ph = Money.pharmacy();
+        insBtn.setVisibility(ph ? VISIBLE : GONE);
+        boolean ins = ph && a.cart.fund.length() > 0;
+        splitView.setVisibility(ins ? VISIBLE : GONE);
+        if (ins) {
+            splitView.setText(a.cart.fund + " pays " + Money.fmt(a.cart.reimbursed())
+                    + "   \u2022   Patient pays " + Money.fmt(a.cart.patientShare()));
+        }
+        insBtn.setText(ins ? "Payment: " + a.cart.fund + (a.cart.exempt ? " 100%" : "")
+                + (a.cart.insured.length() > 0 ? "  \u2022  " + a.cart.insured : "")
+                + "  (change)" : "Payment: cash  (tap for CNAS / CASNOS)");
         countView.setText(a.cart.itemCount() + " items");
         totalView.setText(Money.fmt(a.cart.total()));
         checkoutBtn.setEnabled(!a.cart.isEmpty());

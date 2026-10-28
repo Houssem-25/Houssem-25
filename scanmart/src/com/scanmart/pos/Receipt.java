@@ -12,7 +12,8 @@ import java.util.Date;
 import java.util.List;
 
 class Receipt {
-    static String build(Context c, long id, long ts, List<Db.SaleItem> items) {
+    static String build(Context c, Db.Sale sale, List<Db.SaleItem> items) {
+        long id = sale.id, ts = sale.ts;
         StringBuilder sb = new StringBuilder();
         sb.append(Dialogs.storeName(c)).append('\n');
         sb.append(DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT)
@@ -26,12 +27,20 @@ class Receipt {
             sb.append("  ").append(i.qty).append(" x ").append(Money.fmt(i.price))
                     .append("  =  ").append(Money.fmt(line)).append('\n');
         }
-        sb.append("\nTOTAL: ").append(Money.fmt(total)).append("\n\nThank you!");
+        sb.append("\nTOTAL: ").append(Money.fmt(total)).append('\n');
+        if (sale.fund.length() > 0) {
+            sb.append("\nInsurance: ").append(sale.fund).append('\n');
+            if (sale.insured.length() > 0) sb.append("Insured no.: ").append(sale.insured).append('\n');
+            if (sale.patient.length() > 0) sb.append("Patient: ").append(sale.patient).append('\n');
+            sb.append(sale.fund).append(" pays: ").append(Money.fmt(sale.reimbursed)).append('\n');
+            sb.append("PATIENT PAYS: ").append(Money.fmt(total - sale.reimbursed)).append('\n');
+        }
+        sb.append("\nThank you!");
         return sb.toString();
     }
 
-    static void show(final Context c, long id, long ts, List<Db.SaleItem> items) {
-        final String text = build(c, id, ts, items);
+    static void show(final Context c, Db.Sale sale, List<Db.SaleItem> items) {
+        final String text = build(c, sale, items);
         TextView tv = new TextView(c);
         tv.setText(text);
         tv.setTypeface(Typeface.MONOSPACE);

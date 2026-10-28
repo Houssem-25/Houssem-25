@@ -16,6 +16,10 @@ class Db extends SQLiteOpenHelper {
         long ts;
         long total;
         int items;
+        String fund = "";
+        String insured = "";
+        String patient = "";
+        long reimbursed;
     }
 
     static class SaleItem {
@@ -23,10 +27,14 @@ class Db extends SQLiteOpenHelper {
         String name;
         long price;
         int qty;
+        String dci = "";
+        long tr;
+        int rate;
+        long reimb; // line total paid by the insurer
     }
 
     Db(Context c) {
-        super(c, "scanmart.db", null, 3);
+        super(c, "scanmart.db", null, 4);
     }
 
     @Override
@@ -34,11 +42,15 @@ class Db extends SQLiteOpenHelper {
         db.execSQL("CREATE TABLE products (barcode TEXT PRIMARY KEY, name TEXT NOT NULL, "
                 + "price INTEGER NOT NULL, stock INTEGER NOT NULL DEFAULT 0, updated INTEGER, "
                 + "dci TEXT, dosage TEXT, form TEXT, lab TEXT, batch TEXT, "
-                + "expiry INTEGER NOT NULL DEFAULT 0, rx INTEGER NOT NULL DEFAULT 0)");
+                + "expiry INTEGER NOT NULL DEFAULT 0, rx INTEGER NOT NULL DEFAULT 0, "
+                + "tr INTEGER NOT NULL DEFAULT 0, reimb INTEGER NOT NULL DEFAULT 0)");
         db.execSQL("CREATE TABLE sales (id INTEGER PRIMARY KEY AUTOINCREMENT, ts INTEGER NOT NULL, "
-                + "total INTEGER NOT NULL)");
+                + "total INTEGER NOT NULL, fund TEXT NOT NULL DEFAULT '', insured TEXT, patient TEXT, "
+                + "reimbursed INTEGER NOT NULL DEFAULT 0)");
         db.execSQL("CREATE TABLE sale_items (id INTEGER PRIMARY KEY AUTOINCREMENT, "
-                + "sale_id INTEGER NOT NULL, barcode TEXT, name TEXT, price INTEGER, qty INTEGER)");
+                + "sale_id INTEGER NOT NULL, barcode TEXT, name TEXT, price INTEGER, qty INTEGER, "
+                + "dci TEXT, tr INTEGER NOT NULL DEFAULT 0, rate INTEGER NOT NULL DEFAULT 0, "
+                + "reimb INTEGER NOT NULL DEFAULT 0)");
         seed(db);
     }
 
@@ -50,6 +62,18 @@ class Db extends SQLiteOpenHelper {
             for (String col : text) db.execSQL("ALTER TABLE products ADD COLUMN " + col + " TEXT");
             db.execSQL("ALTER TABLE products ADD COLUMN expiry INTEGER NOT NULL DEFAULT 0");
             db.execSQL("ALTER TABLE products ADD COLUMN rx INTEGER NOT NULL DEFAULT 0");
+        }
+        if (oldV < 4) {
+            db.execSQL("ALTER TABLE products ADD COLUMN tr INTEGER NOT NULL DEFAULT 0");
+            db.execSQL("ALTER TABLE products ADD COLUMN reimb INTEGER NOT NULL DEFAULT 0");
+            db.execSQL("ALTER TABLE sales ADD COLUMN fund TEXT NOT NULL DEFAULT ''");
+            db.execSQL("ALTER TABLE sales ADD COLUMN insured TEXT");
+            db.execSQL("ALTER TABLE sales ADD COLUMN patient TEXT");
+            db.execSQL("ALTER TABLE sales ADD COLUMN reimbursed INTEGER NOT NULL DEFAULT 0");
+            db.execSQL("ALTER TABLE sale_items ADD COLUMN dci TEXT");
+            db.execSQL("ALTER TABLE sale_items ADD COLUMN tr INTEGER NOT NULL DEFAULT 0");
+            db.execSQL("ALTER TABLE sale_items ADD COLUMN rate INTEGER NOT NULL DEFAULT 0");
+            db.execSQL("ALTER TABLE sale_items ADD COLUMN reimb INTEGER NOT NULL DEFAULT 0");
         }
     }
 
@@ -101,7 +125,7 @@ class Db extends SQLiteOpenHelper {
     // ---- products --------------------------------------------------------
 
     private static final String COLS = "barcode, name, price, stock, dci, dosage, form, lab, "
-            + "batch, expiry, rx";
+            + "batch, expiry, rx, tr, reimb";
 
     private static String nz(String s) {
         return s == null ? "" : s;
@@ -116,6 +140,8 @@ class Db extends SQLiteOpenHelper {
         p.batch = nz(c.getString(8));
         p.expiry = c.getLong(9);
         p.rx = c.getInt(10) != 0;
+        p.tr = c.getLong(11);
+        p.reimb = c.getInt(12);
         return p;
     }
 
@@ -133,6 +159,8 @@ class Db extends SQLiteOpenHelper {
         v.put("batch", p.batch);
         v.put("expiry", p.expiry);
         v.put("rx", p.rx ? 1 : 0);
+        v.put("tr", p.tr);
+        v.put("reimb", p.reimb);
         return v;
     }
 
@@ -247,15 +275,24 @@ class Db extends SQLiteOpenHelper {
 
     // ---- sales -----------------------------------------------------------
 
-    long checkout(List<CartLine> lines) {
+    long checkout(List<CartLine> lines, String fund, String insured, String patient,
+                  boolean exempt) {
         SQLiteDatabase db = getWritableDatabase();
         db.beginTransaction();
         try {
-            long total = 0;
-            for (CartLine l : lines) total += l.total();
+            long total = 0, reimbursed = 0;
+            boolean insuredSale = fund != null && fund.length() > 0;
+            for (CartLine l : lines) {
+                total += l.total();
+                if (insuredSale) reimbursed += Reimb.perUnit(l.product, exempt) * l.qty;
+            }
             ContentValues s = new ContentValues();
             s.put("ts", System.currentTimeMillis());
             s.put("total", total);
+            s.put("fund", insuredSale ? fund : "");
+            s.put("insured", insured);
+            s.put("patient", patient);
+            s.put("reimbursed", reimbursed);
             long saleId = db.insert("sales", null, s);
             for (CartLine l : lines) {
                 ContentValues v = new ContentValues();
@@ -264,6 +301,10 @@ class Db extends SQLiteOpenHelper {
                 v.put("name", l.product.name);
                 v.put("price", l.product.price);
                 v.put("qty", l.qty);
+                v.put("dci", l.product.dci);
+                v.put("tr", l.product.tr);
+                v.put("rate", insuredSale ? Reimb.rate(l.product, exempt) : 0);
+                v.put("reimb", insuredSale ? Reimb.perUnit(l.product, exempt) * l.qty : 0);
                 db.insert("sale_items", null, v);
                 db.execSQL("UPDATE products SET stock = MAX(stock - ?, 0) WHERE barcode = ?",
                         new Object[]{l.qty, l.product.barcode});
@@ -275,11 +316,11 @@ class Db extends SQLiteOpenHelper {
         }
     }
 
-    List<Sale> sales(int limit) {
+    private List<Sale> querySales(String where, String[] args, int limit) {
         Cursor c = getReadableDatabase().rawQuery(
-                "SELECT s.id, s.ts, s.total, COALESCE(SUM(i.qty), 0) FROM sales s "
-                        + "LEFT JOIN sale_items i ON i.sale_id = s.id "
-                        + "GROUP BY s.id ORDER BY s.id DESC LIMIT " + limit, null);
+                "SELECT s.id, s.ts, s.total, COALESCE(SUM(i.qty), 0), s.fund, s.insured, s.patient, "
+                        + "s.reimbursed FROM sales s LEFT JOIN sale_items i ON i.sale_id = s.id "
+                        + where + " GROUP BY s.id ORDER BY s.id DESC LIMIT " + limit, args);
         List<Sale> out = new ArrayList<Sale>();
         try {
             while (c.moveToNext()) {
@@ -288,6 +329,10 @@ class Db extends SQLiteOpenHelper {
                 s.ts = c.getLong(1);
                 s.total = c.getLong(2);
                 s.items = c.getInt(3);
+                s.fund = nz(c.getString(4));
+                s.insured = nz(c.getString(5));
+                s.patient = nz(c.getString(6));
+                s.reimbursed = c.getLong(7);
                 out.add(s);
             }
         } finally {
@@ -296,10 +341,19 @@ class Db extends SQLiteOpenHelper {
         return out;
     }
 
+    List<Sale> sales(int limit) {
+        return querySales("", null, limit);
+    }
+
+    Sale getSale(long id) {
+        List<Sale> l = querySales("WHERE s.id = ?", new String[]{String.valueOf(id)}, 1);
+        return l.isEmpty() ? null : l.get(0);
+    }
+
     List<SaleItem> saleItems(long saleId) {
         Cursor c = getReadableDatabase().rawQuery(
-                "SELECT barcode, name, price, qty FROM sale_items WHERE sale_id = ? ORDER BY id",
-                new String[]{String.valueOf(saleId)});
+                "SELECT barcode, name, price, qty, dci, tr, rate, reimb FROM sale_items "
+                        + "WHERE sale_id = ? ORDER BY id", new String[]{String.valueOf(saleId)});
         List<SaleItem> out = new ArrayList<SaleItem>();
         try {
             while (c.moveToNext()) {
@@ -308,12 +362,61 @@ class Db extends SQLiteOpenHelper {
                 i.name = c.getString(1);
                 i.price = c.getLong(2);
                 i.qty = c.getInt(3);
+                i.dci = nz(c.getString(4));
+                i.tr = c.getLong(5);
+                i.rate = c.getInt(6);
+                i.reimb = c.getLong(7);
                 out.add(i);
             }
         } finally {
             c.close();
         }
         return out;
+    }
+
+    /** Amount the given fund still owes since the timestamp (insured sales only). */
+    long receivable(String fund, long since) {
+        Cursor c = getReadableDatabase().rawQuery(
+                "SELECT COALESCE(SUM(reimbursed), 0) FROM sales WHERE fund = ? AND ts >= ?",
+                new String[]{fund, String.valueOf(since)});
+        try {
+            return c.moveToFirst() ? c.getLong(0) : 0;
+        } finally {
+            c.close();
+        }
+    }
+
+    /** One CSV line per insured sale item in [since, until): the basis of a tiers-payant invoice. */
+    String claimsCsv(long since, long until) {
+        StringBuilder sb = new StringBuilder("date,receipt,fund,insured_number,patient,product,"
+                + "barcode,dci,qty,unit_price,reference_tariff,rate_percent,insurer_pays,patient_pays\n");
+        Cursor c = getReadableDatabase().rawQuery(
+                "SELECT s.ts, s.id, s.fund, s.insured, s.patient, i.name, i.barcode, i.dci, i.qty, "
+                        + "i.price, i.tr, i.rate, i.reimb FROM sales s JOIN sale_items i "
+                        + "ON i.sale_id = s.id WHERE s.fund != '' AND s.ts >= ? AND s.ts < ? "
+                        + "ORDER BY s.fund, s.ts, s.id, i.id",
+                new String[]{String.valueOf(since), String.valueOf(until)});
+        java.text.SimpleDateFormat df = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm",
+                java.util.Locale.US);
+        try {
+            while (c.moveToNext()) {
+                long line = c.getLong(9) * c.getInt(8);
+                sb.append(df.format(new java.util.Date(c.getLong(0)))).append(',')
+                        .append(c.getLong(1)).append(',').append(Csv.esc(nz(c.getString(2))))
+                        .append(',').append(Csv.esc(nz(c.getString(3)))).append(',')
+                        .append(Csv.esc(nz(c.getString(4)))).append(',')
+                        .append(Csv.esc(nz(c.getString(5)))).append(',')
+                        .append(Csv.esc(nz(c.getString(6)))).append(',')
+                        .append(Csv.esc(nz(c.getString(7)))).append(',').append(c.getInt(8))
+                        .append(',').append(Money.plain(c.getLong(9))).append(',')
+                        .append(Money.plain(c.getLong(10))).append(',').append(c.getInt(11))
+                        .append(',').append(Money.plain(c.getLong(12))).append(',')
+                        .append(Money.plain(line - c.getLong(12))).append('\n');
+            }
+        } finally {
+            c.close();
+        }
+        return sb.toString();
     }
 
     /** [count, total] of sales since the given number of days ago (0 = since midnight today). */

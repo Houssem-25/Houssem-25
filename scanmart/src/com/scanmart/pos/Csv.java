@@ -14,9 +14,9 @@ import java.util.zip.CRC32;
  * header it expects barcode,name,price,stock,dci,dosage,form,lab,expiry,batch,rx.
  */
 class Csv {
-    static final String HEADER = "barcode,name,price,stock,dci,dosage,form,lab,expiry,batch,rx";
+    static final String HEADER = "barcode,name,price,stock,dci,dosage,form,lab,expiry,batch,rx,tr,reimb";
     private static final String[] COLS = {"barcode", "name", "price", "stock", "dci", "dosage",
-            "form", "lab", "expiry", "batch", "rx"};
+            "form", "lab", "expiry", "batch", "rx", "tr", "reimb"};
 
     static String export(List<Product> items) {
         StringBuilder sb = new StringBuilder(HEADER).append('\n');
@@ -26,12 +26,13 @@ class Csv {
                     .append(esc(p.dci)).append(',').append(esc(p.dosage)).append(',')
                     .append(esc(p.form)).append(',').append(esc(p.lab)).append(',')
                     .append(Product.fmtExpiry(p.expiry)).append(',').append(esc(p.batch)).append(',')
-                    .append(p.rx ? 1 : 0).append('\n');
+                    .append(p.rx ? 1 : 0).append(',').append(Money.plain(p.tr)).append(',')
+                    .append(p.reimb).append('\n');
         }
         return sb.toString();
     }
 
-    private static String esc(String s) {
+    static String esc(String s) {
         if (s.indexOf(',') >= 0 || s.indexOf('"') >= 0 || s.indexOf('\n') >= 0) {
             return "\"" + s.replace("\"", "\"\"") + "\"";
         }
@@ -49,8 +50,10 @@ class Csv {
                 "codecip", "codeproduit", "nenregistrement", "numeroenregistrement");
         syn("name", "name", "nom", "denomination", "denominationcommerciale", "nomcommercial",
                 "marque", "designation", "produit", "medicament");
-        syn("price", "price", "prix", "ppa", "tarif", "tarifdereference", "prixdevente", "pv",
-                "prixpublic", "prixttc");
+        syn("price", "price", "prix", "ppa", "prixdevente", "pv", "prixpublic", "prixttc");
+        syn("tr", "tr", "tarifdereference", "tarifref", "tarifreference", "tarif", "baseremboursement");
+        syn("reimb", "reimb", "taux", "tauxderemboursement", "remboursement", "remb", "rembourse",
+                "tauxremb");
         syn("stock", "stock", "qte", "quantite", "qty");
         syn("dci", "dci", "denominationcommuneinternationale", "principeactif", "substance",
                 "generique");
@@ -146,6 +149,11 @@ class Csv {
             long ex = Product.parseExpiry(get(f, idx, "expiry"));
             p.expiry = ex > 0 ? ex : 0;
             p.rx = truthy(get(f, idx, "rx"));
+            p.tr = price(get(f, idx, "tr"));
+            if (p.price == 0 && p.tr > 0) p.price = p.tr;
+            String rt = get(f, idx, "reimb").replaceAll("[^0-9]", "");
+            if (rt.length() > 0 && rt.length() <= 3) p.reimb = Math.min(100, Integer.parseInt(rt));
+            else if (p.tr > 0) p.reimb = 80; // standard rate when a reference tariff exists
             res.items.add(p);
         }
         return res;

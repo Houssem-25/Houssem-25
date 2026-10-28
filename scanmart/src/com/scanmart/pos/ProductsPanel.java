@@ -193,9 +193,9 @@ class ProductsPanel extends Panel {
         if (detail.length() > 0) mid.addView(U.text(a, detail, 12, U.PRIMARY_DARK, false));
         mid.addView(U.text(a, p.barcode + "  •  stock " + p.stock, 12,
                 low ? U.DANGER : U.MUTED, false));
-        if (p.expiry > 0 || p.rx) {
+        if (p.expiry > 0 || p.rx || p.reimb > 0) {
             int st = p.expiryState();
-            String tag = (p.rx ? "Rx  " : "") + (p.expiry > 0 ? "exp " + Product.fmtExpiry(p.expiry)
+            String tag = (p.rx ? "Rx  " : "") + (p.reimb > 0 ? p.reimb + "%  " : "") + (p.expiry > 0 ? "exp " + Product.fmtExpiry(p.expiry)
                     + (st == 2 ? " EXPIRED" : st == 1 ? " (soon)" : "") : "");
             mid.addView(U.text(a, tag, 12, st == 2 ? U.DANGER : st == 1
                     ? Color.parseColor("#B5651D") : U.MUTED, st > 0));
@@ -216,7 +216,8 @@ class ProductsPanel extends Panel {
     private void tools() {
         final boolean ph = Money.pharmacy();
         String[] labels = ph
-                ? new String[]{"Import medicines from CSV file", "Export products to CSV file"}
+                ? new String[]{"Import medicines from CSV file", "Export products to CSV file",
+                "Export CNAS / CASNOS claims (CSV)"}
                 : new String[]{"Import Algerian product catalog (online)",
                 "Import products from CSV file", "Export products to CSV file"};
         new AlertDialog.Builder(a)
@@ -227,7 +228,8 @@ class ProductsPanel extends Panel {
                         if (!ph) which++;
                         if (which == 0) a.importCatalog();
                         else if (which == 1) a.pickCsv();
-                        else a.exportCsv();
+                        else if (which == 2) a.exportCsv();
+                        else a.exportClaims();
                     }
                 })
                 .show();

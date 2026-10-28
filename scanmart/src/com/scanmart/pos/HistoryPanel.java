@@ -13,6 +13,8 @@ import java.util.List;
 class HistoryPanel extends Panel {
     private final MainActivity a;
     private final LinearLayout list;
+    private LinearLayout owed;
+    private TextView owedText;
     private TextView todayCount, todaySub, weekTotal, weekSub;
 
     HistoryPanel(MainActivity act) {
@@ -32,6 +34,11 @@ class HistoryPanel extends Panel {
                 weekSub = U.text(a, "", 12, U.MUTED, false)),
                 U.margins(U.lp(0, -2, 1), a, 6, 0, 0, 0));
         root.addView(stats, U.margins(U.lp(-1, -2, 0), a, 12, 12, 12, 0));
+        owed = U.card(a);
+        owedText = U.text(a, "", 14, U.INK, false);
+        owed.addView(U.text(a, "Owed by insurers this month", 12, U.MUTED, false));
+        owed.addView(owedText);
+        root.addView(owed, U.margins(U.lp(-1, -2, 0), a, 12, 10, 12, 0));
 
         ScrollView sv = new ScrollView(a);
         list = new LinearLayout(a);
@@ -51,6 +58,21 @@ class HistoryPanel extends Panel {
 
     @Override
     void onShow() {
+        owed.setVisibility(Money.pharmacy() ? VISIBLE : GONE);
+        if (Money.pharmacy()) {
+            java.util.Calendar cal = java.util.Calendar.getInstance();
+            cal.set(java.util.Calendar.DAY_OF_MONTH, 1);
+            cal.set(java.util.Calendar.HOUR_OF_DAY, 0);
+            cal.set(java.util.Calendar.MINUTE, 0);
+            cal.set(java.util.Calendar.SECOND, 0);
+            cal.set(java.util.Calendar.MILLISECOND, 0);
+            StringBuilder sb = new StringBuilder();
+            for (String f : Reimb.FUNDS) {
+                if (sb.length() > 0) sb.append("     ");
+                sb.append(f).append(": ").append(Money.fmt(a.db.receivable(f, cal.getTimeInMillis())));
+            }
+            owedText.setText(sb.toString());
+        }
         long[] t = a.db.salesSince(0);
         long[] w = a.db.salesSince(6);
         todayCount.setText(Money.fmt(t[1]));
@@ -68,15 +90,15 @@ class HistoryPanel extends Panel {
             LinearLayout left = new LinearLayout(a);
             left.setOrientation(LinearLayout.VERTICAL);
             left.addView(U.text(a, "Receipt #" + s.id, 16, U.INK, true));
-            left.addView(U.text(a, df.format(new Date(s.ts)) + "  •  " + s.items + " items", 12,
-                    U.MUTED, false));
+            left.addView(U.text(a, df.format(new Date(s.ts)) + "  •  " + s.items + " items"
+                    + (s.fund.length() > 0 ? "  •  " + s.fund : ""), 12, U.MUTED, false));
             row.addView(left, U.lp(0, -2, 1));
             row.addView(U.text(a, Money.fmt(s.total), 18, U.PRIMARY_DARK, true));
             card.addView(row);
             card.setOnClickListener(new OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    Receipt.show(a, s.id, s.ts, a.db.saleItems(s.id));
+                    Receipt.show(a, s, a.db.saleItems(s.id));
                 }
             });
             list.addView(card, U.margins(U.lp(-1, -2, 0), a, 0, 0, 0, 10));

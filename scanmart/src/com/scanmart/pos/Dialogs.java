@@ -55,6 +55,19 @@ class Dialogs {
         final EditText expiry = U.input(c, "Expiry (MM/YYYY)", InputType.TYPE_CLASS_TEXT);
         final android.widget.CheckBox rx = new android.widget.CheckBox(c);
         rx.setText("Prescription required");
+        final EditText tr = U.input(c, "Reference tariff / TR (" + Money.symbol() + ")",
+                InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
+        TextView rateLbl = U.text(c, "Reimbursement (CNAS / CASNOS)", 13, U.MUTED, false);
+        final android.widget.RadioGroup rate = new android.widget.RadioGroup(c);
+        rate.setOrientation(LinearLayout.HORIZONTAL);
+        int[] rates = {0, 80, 100};
+        for (int i = 0; i < rates.length; i++) {
+            android.widget.RadioButton rb = new android.widget.RadioButton(c);
+            rb.setText(rates[i] == 0 ? "None" : rates[i] + "%");
+            rb.setId(200 + rates[i]);
+            rate.addView(rb);
+        }
+        rate.check(200);
         if (pharma) {
             if (existing != null) {
                 dci.setText(existing.dci);
@@ -64,6 +77,9 @@ class Dialogs {
                 batch.setText(existing.batch);
                 expiry.setText(Product.fmtExpiry(existing.expiry));
                 rx.setChecked(existing.rx);
+                if (existing.tr > 0) tr.setText(Money.plain(existing.tr));
+                int r = existing.reimb;
+                rate.check(200 + (r >= 100 ? 100 : r > 0 ? 80 : 0));
             }
             box.addView(dci);
             box.addView(dosage);
@@ -72,6 +88,9 @@ class Dialogs {
             box.addView(batch);
             box.addView(expiry);
             box.addView(rx);
+            box.addView(tr);
+            box.addView(rateLbl);
+            box.addView(rate);
         }
 
         final AlertDialog d = new AlertDialog.Builder(c)
@@ -145,6 +164,14 @@ class Dialogs {
                     p.batch = batch.getText().toString().trim();
                     p.expiry = ex;
                     p.rx = rx.isChecked();
+                    String trText = tr.getText().toString().trim();
+                    long trv = trText.length() == 0 ? 0 : Money.parse(trText);
+                    if (trv < 0) {
+                        Toast.makeText(c, "Enter a valid reference tariff", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    p.tr = trv;
+                    p.reimb = rate.getCheckedRadioButtonId() - 200;
                 } else if (existing != null) {
                     p.dci = existing.dci;
                     p.dosage = existing.dosage;
@@ -153,6 +180,8 @@ class Dialogs {
                     p.batch = existing.batch;
                     p.expiry = existing.expiry;
                     p.rx = existing.rx;
+                    p.tr = existing.tr;
+                    p.reimb = existing.reimb;
                 }
                 db.save(p);
                 if (existing != null) existing.copyFrom(p);
@@ -160,6 +189,53 @@ class Dialogs {
                 if (cb != null) cb.done(p);
             }
         });
+    }
+
+    /** Choose the paying fund for the current sale (or cash) and record the insured's details. */
+    static void insurance(final Context c, final Cart cart, final Runnable done) {
+        LinearLayout box = new LinearLayout(c);
+        box.setOrientation(LinearLayout.VERTICAL);
+        int pad = U.dp(c, 20);
+        box.setPadding(pad, U.dp(c, 8), pad, 0);
+        final android.widget.RadioGroup g = new android.widget.RadioGroup(c);
+        android.widget.RadioButton cash = new android.widget.RadioButton(c);
+        cash.setText("Cash (no insurance)");
+        cash.setId(300);
+        g.addView(cash);
+        for (int i = 0; i < Reimb.FUNDS.length; i++) {
+            android.widget.RadioButton rb = new android.widget.RadioButton(c);
+            rb.setText(Reimb.FUNDS[i] + " (Chifa card)");
+            rb.setId(301 + i);
+            g.addView(rb);
+            if (Reimb.FUNDS[i].equals(cart.fund)) g.check(301 + i);
+        }
+        if (cart.fund.length() == 0) g.check(300);
+        final EditText no = U.input(c, "Insured number (N\u00b0 s\u00e9curit\u00e9 sociale)",
+                InputType.TYPE_CLASS_NUMBER);
+        no.setText(cart.insured);
+        final EditText who = U.input(c, "Patient name (optional)",
+                InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_WORDS);
+        who.setText(cart.patient);
+        final android.widget.CheckBox ex = new android.widget.CheckBox(c);
+        ex.setText("100% coverage (chronic illness / exempt)");
+        ex.setChecked(cart.exempt);
+        box.addView(g);
+        box.addView(no);
+        box.addView(who);
+        box.addView(ex);
+        new AlertDialog.Builder(c).setTitle("Payment: insurance")
+                .setView(scroll(c, box))
+                .setNegativeButton("Cancel", null)
+                .setPositiveButton("Apply", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface d, int w) {
+                        int id = g.getCheckedRadioButtonId();
+                        String fund = id >= 301 ? Reimb.FUNDS[id - 301] : "";
+                        cart.setInsurance(fund, no.getText().toString().trim(),
+                                who.getText().toString().trim(), fund.length() > 0 && ex.isChecked());
+                        if (done != null) done.run();
+                    }
+                }).show();
     }
 
     static android.widget.ScrollView scroll(Context c, View v) {

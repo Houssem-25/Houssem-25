@@ -315,12 +315,49 @@ public class MainActivity extends Activity {
 
     private static final int REQ_EXPORT = 11, REQ_IMPORT = 12;
 
-    void exportCsv() {
+    private String pendingExport;
+
+    private void saveText(String filename, String content) {
+        pendingExport = content;
         Intent i = new Intent(Intent.ACTION_CREATE_DOCUMENT);
         i.addCategory(Intent.CATEGORY_OPENABLE);
         i.setType("text/csv");
-        i.putExtra(Intent.EXTRA_TITLE, "scanmart-products.csv");
+        i.putExtra(Intent.EXTRA_TITLE, filename);
         startActivityForResult(i, REQ_EXPORT);
+    }
+
+    void exportCsv() {
+        saveText("scanmart-products.csv", Csv.export(db.all()));
+    }
+
+    /** Insurance claims (tiers payant) for a period, one line per insured sale item. */
+    void exportClaims() {
+        new AlertDialog.Builder(this).setTitle("Claims period")
+                .setItems(new String[]{"This month", "Last month", "All time"},
+                        new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface d, int which) {
+                                java.util.Calendar cal = java.util.Calendar.getInstance();
+                                cal.set(java.util.Calendar.DAY_OF_MONTH, 1);
+                                cal.set(java.util.Calendar.HOUR_OF_DAY, 0);
+                                cal.set(java.util.Calendar.MINUTE, 0);
+                                cal.set(java.util.Calendar.SECOND, 0);
+                                cal.set(java.util.Calendar.MILLISECOND, 0);
+                                long start = cal.getTimeInMillis();
+                                long since, until = Long.MAX_VALUE;
+                                String name = "scanmart-claims.csv";
+                                if (which == 0) {
+                                    since = start;
+                                } else if (which == 1) {
+                                    until = start;
+                                    cal.add(java.util.Calendar.MONTH, -1);
+                                    since = cal.getTimeInMillis();
+                                } else {
+                                    since = 0;
+                                }
+                                saveText(name, db.claimsCsv(since, until));
+                            }
+                        }).show();
     }
 
     void pickCsv() {
@@ -351,11 +388,12 @@ public class MainActivity extends Activity {
             if (req == REQ_EXPORT) {
                 OutputStream out = getContentResolver().openOutputStream(uri);
                 try {
-                    out.write(Csv.export(db.all()).getBytes("UTF-8"));
+                    out.write(("\uFEFF" + (pendingExport == null ? "" : pendingExport))
+                            .getBytes("UTF-8"));
                 } finally {
                     out.close();
                 }
-                Toast.makeText(this, "Products exported", Toast.LENGTH_LONG).show();
+                Toast.makeText(this, "File saved", Toast.LENGTH_LONG).show();
             } else if (req == REQ_IMPORT) {
                 InputStream in = getContentResolver().openInputStream(uri);
                 ByteArrayOutputStream buf = new ByteArrayOutputStream();
